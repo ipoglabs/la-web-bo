@@ -8,7 +8,8 @@ import mongoose from "mongoose";
 export async function getCurrentUser() {
   await connectDB();
 
-  const session = getSession();
+  // ✅ getSession is async
+  const session = await getSession();
   if (!session) return null;
 
   const { userId, email } = session;
