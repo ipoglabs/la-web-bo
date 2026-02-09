@@ -32,11 +32,18 @@ export async function bumpPost(postId: string) {
   try {
     await connectDB();
 
-    const cookieStore = cookies();
-    const hdrs = headers();
+    // ✅ Next.js 16: BOTH are async
+    const cookieStore = await cookies();
+    const hdrs = await headers();
 
-    let raw = cookieStore.get("session")?.value || hdrs.get("authorization") || "";
-    if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length).trim();
+    let raw =
+      cookieStore.get("session")?.value ||
+      hdrs.get("authorization") ||
+      "";
+
+    if (raw?.startsWith("Bearer ")) {
+      raw = raw.slice("Bearer ".length).trim();
+    }
 
     const decoded = raw ? verifyToken(raw) : null;
     const ownerEmail = extractEmailFromDecoded(decoded);
