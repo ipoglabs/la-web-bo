@@ -18,15 +18,21 @@ export function ToggleGroup({
   return (
     <div role="group" className={cn("toggle-group", className)} {...props}>
       {React.Children.map(children, (child) => {
-        if (!React.isValidElement(child)) return child;
+        if (
+          !React.isValidElement<ToggleGroupItemProps>(child)
+        ) {
+          return child
+        }
+
         return React.cloneElement(child, {
           selected: child.props.value === value,
           onClick: () => onValueChange(child.props.value),
-        });
+        })
       })}
     </div>
-  );
+  )
 }
+
 
 export interface ToggleGroupItemProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
