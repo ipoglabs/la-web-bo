@@ -55,20 +55,22 @@ export async function POST(req: Request) {
     // Map Twilio statuses
     // approved | pending | canceled | failed
     if (result.status === 'approved') {
-      // ✅ Success: set cookie for /api/register and clear guard
-      cookies().set('reg_phone_v', normalized, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 10 * 60, // 10 minutes
-        path: '/',
-      });
+  // ✅ Success: set cookie for /api/register and clear guard
+  const cookieStore = await cookies();
+  cookieStore.set('reg_phone_v', normalized, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 10 * 60,
+    path: '/',
+  });
 
-      guard.attempts = 0;
-      guard.lockedUntil = null;
+  guard.attempts = 0;
+  guard.lockedUntil = null;
 
-      return NextResponse.json({ success: true });
-    }
+  return NextResponse.json({ success: true });
+}
+
 
     // Twilio returns 404-ish semantics when code not found/expired; we unify UX:
     // If not approved, treat as invalid unless provider signals expiry.
