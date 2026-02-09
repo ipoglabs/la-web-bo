@@ -71,13 +71,14 @@ export async function updatePost(
     await connectDB();
 
     // 🔐 Use same session mechanism as getCurrentUser()
-    const session = getSession();
-    if (!session) {
-      return { ok: false, error: "Not authenticated" };
-    }
+const session = await getSession(); // ✅ await is required
+if (!session) {
+  return { ok: false, error: "Not authenticated" };
+}
 
-    const sessionUserId = session.userId;
-    const sessionEmail = normEmail(session.email);
+const sessionUserId = session.userId;
+const sessionEmail = normEmail(session.email);
+
 
     if (!sessionUserId || !Types.ObjectId.isValid(sessionUserId)) {
       return { ok: false, error: "Invalid session user id" };
