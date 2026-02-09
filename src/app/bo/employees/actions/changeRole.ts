@@ -42,14 +42,15 @@ export async function changeEmployeeRole(
     }
 
     employee.role = nextRole
-    employee.audit.push({
-      action: "role_change",
-      from: prevRole,
-      to: nextRole,
-      by: session.id,
-    })
+employee.audit.push({
+  action: "role_change",
+  from: prevRole,
+  to: nextRole,
+  by: session.adminId, // ✅ correct field
+})
 
-    await employee.save()
+await employee.save()
+
 
     return { ok: true }
   } catch (e: any) {
