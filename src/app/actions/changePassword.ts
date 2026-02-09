@@ -16,11 +16,11 @@ export async function changePassword(form: FormData) {
     cookieStore.get("token")?.value?.replace(/^Bearer\s+/i, "") || "";
 
   const decoded = token ? verifyToken(token) : null;
-  const userId = decoded?.id || decoded?.userId;
+const userId = decoded?.userId;
 
-  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-    return { ok: false, error: "Not authenticated" };
-  }
+if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+  return { ok: false, error: "Not authenticated" };
+}
 
   const currentPassword = (form.get("currentPassword") as string) || "";
   const newPassword = (form.get("newPassword") as string) || "";
