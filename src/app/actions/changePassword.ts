@@ -10,9 +10,14 @@ import mongoose from "mongoose";
 export async function changePassword(form: FormData) {
   await connectDB();
 
-  const token = cookies().get("token")?.value?.replace(/^Bearer\s+/i, "") || "";
+  // ✅ Next.js 16: cookies() is async
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get("token")?.value?.replace(/^Bearer\s+/i, "") || "";
+
   const decoded = token ? verifyToken(token) : null;
   const userId = decoded?.id || decoded?.userId;
+
   if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
     return { ok: false, error: "Not authenticated" };
   }
@@ -28,5 +33,6 @@ export async function changePassword(form: FormData) {
 
   user.password = await bcrypt.hash(newPassword, 12);
   await user.save();
+
   return { ok: true };
 }
