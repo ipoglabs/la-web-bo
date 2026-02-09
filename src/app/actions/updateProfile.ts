@@ -10,7 +10,7 @@ import mongoose from "mongoose";
 type UpdatePayload = {
   firstName?: string;
   lastName?: string;
-  dateOfBirth?: string; // ISO yyyy-mm-dd
+  dateOfBirth?: string;
   gender?: "Male" | "Female" | "Other";
   nationality?: string;
   residency?: string;
@@ -21,12 +21,18 @@ type UpdatePayload = {
   marketingOptIn?: boolean;
 };
 
-export async function updateProfile(form: FormData): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function updateProfile(
+  form: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
   await connectDB();
 
-  const token = cookies().get("token")?.value?.replace(/^Bearer\s+/i, "") || "";
+  // ✅ Next.js 16: cookies() is async
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get("token")?.value?.replace(/^Bearer\s+/i, "") || "";
+
   const decoded = token ? verifyToken(token) : null;
-  const id = decoded?.id || decoded?.userId;
+  const id = decoded?.userId; // ✅ SessionPayload only has userId
 
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     return { ok: false, error: "Not authenticated" };
@@ -53,11 +59,13 @@ export async function updateProfile(form: FormData): Promise<{ ok: true } | { ok
   if (avatar && avatar.size && avatar.type?.startsWith("image/")) {
     const buf = Buffer.from(await avatar.arrayBuffer());
     const base64 = `data:${avatar.type};base64,${buf.toString("base64")}`;
-    const uploaded = await cloudinary.uploader.upload(base64, { folder: "avatars" });
+    const uploaded = await cloudinary.uploader.upload(base64, {
+      folder: "avatars",
+    });
     imageUrl = uploaded.secure_url;
   }
 
-  // Build update object (avoid overwriting with empties)
+  // Build update object
   const $set: Record<string, any> = {};
   for (const [k, v] of Object.entries(payload)) {
     if (v !== undefined && v !== null && String(v).length > 0) $set[k] = v;
@@ -66,10 +74,9 @@ export async function updateProfile(form: FormData): Promise<{ ok: true } | { ok
   if (imageUrl) $set.image = imageUrl;
 
   try {
-    await User.updateOne({ _id: id }, { $set }).lean();
+    await User.updateOne({ _id: id }, { $set });
     return { ok: true };
   } catch (e: any) {
-    // handle unique constraints
     if (e?.code === 11000) {
       const key = Object.keys(e.keyPattern || {})[0] || "field";
       return { ok: false, error: `That ${key} is already in use.` };
