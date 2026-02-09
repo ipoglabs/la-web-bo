@@ -59,7 +59,7 @@ export async function addPost(
     await connectDB();
 
     // --- Read identity from cookie (token) ---
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     let raw = cookieStore.get("token")?.value;
     if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length).trim();
 
