@@ -5,7 +5,9 @@ import {
   useFormContext,
   type FieldValues,
   type UseFormReturn,
+  type Path, // ✅ ADD THIS
 } from "react-hook-form";
+
 
 // Form context provider
 export function Form({
@@ -25,8 +27,15 @@ export function FormField<TFieldValues extends FieldValues = FieldValues>({
   control: UseFormReturn<TFieldValues>["control"];
   render: (props: any) => React.ReactNode;
 }) {
-  return <Controller<TFieldValues> name={name} control={control} render={render} />;
+  return (
+    <Controller<TFieldValues>
+      name={name}
+      control={control}
+      render={render}
+    />
+  );
 }
+
 
 
 // FormItem: Wrapper for a field
