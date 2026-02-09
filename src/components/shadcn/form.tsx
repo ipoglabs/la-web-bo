@@ -21,12 +21,13 @@ export function FormField<TFieldValues extends FieldValues = FieldValues>({
   control,
   render,
 }: {
-  name: string;
+  name: Path<TFieldValues>;
   control: UseFormReturn<TFieldValues>["control"];
   render: (props: any) => React.ReactNode;
 }) {
-  return <Controller name={name} control={control} render={render} />;
+  return <Controller<TFieldValues> name={name} control={control} render={render} />;
 }
+
 
 // FormItem: Wrapper for a field
 export function FormItem({ children }: { children: React.ReactNode }) {
