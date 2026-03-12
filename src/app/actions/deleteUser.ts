@@ -6,9 +6,10 @@ import connectDB from "@/config/database";
 import User from "@/models/user";
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 
-const ALLOWED = ["super_admin"] as const;
+const ALLOWED = ["super_admin"]; // FIXED
 
 function getActorObjectId(session: any): Types.ObjectId | undefined {
+
   const candidates = [
     session?.adminId,
     session?.id,
@@ -26,7 +27,9 @@ function getActorObjectId(session: any): Types.ObjectId | undefined {
 }
 
 export async function deleteUser(userId: string) {
+
   try {
+
     const cookieStore = await cookies();
     const token = cookieStore.get(ADMIN_COOKIE)?.value || "";
     const session = token ? verifyAdminJwt(token) : null;
@@ -67,8 +70,13 @@ export async function deleteUser(userId: string) {
     }
 
     return { ok: true };
+
   } catch (e: any) {
+
     console.error("deleteUser failed:", e);
+
     return { ok: false, error: e?.message || "Delete failed" };
+
   }
+
 }
