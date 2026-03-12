@@ -26,7 +26,7 @@ export async function reportPost(postId: string, reason?: string) {
     const adminId =
       session.adminId && Types.ObjectId.isValid(session.adminId)
         ? new Types.ObjectId(session.adminId)
-        : null
+        : undefined   // 🔧 FIX (not null)
 
     const post = await Post.findById(postId)
 
@@ -39,7 +39,7 @@ export async function reportPost(postId: string, reason?: string) {
 
     post.reports.push({
       reason: reason || "No reason",
-      by: adminId,
+      ...(adminId && { by: adminId }),   // 🔧 SAFE SPREAD
       at: new Date(),
     })
 
@@ -49,7 +49,7 @@ export async function reportPost(postId: string, reason?: string) {
     if (fraudScore >= 5) {
       post.isSuspended = true
       post.suspendedAt = new Date()
-      post.suspendedBy = adminId
+      if (adminId) post.suspendedBy = adminId
     }
 
     await post.save()
