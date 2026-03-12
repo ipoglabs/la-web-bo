@@ -114,13 +114,13 @@ export default async function BoPostDetailsPage({
 
           </div>
 
-          <AdminPostActions
-            postId={post._id.toString()}
-            status={post.status}
-            role={session?.role}
-            reported={!!post.reported}
-            isSuspended={!!post.isSuspended}
-          />
+         <AdminPostActions
+  postId={post._id.toString()}
+  status={post.status ?? "pending"}
+  role={session?.role}
+  reported={!!post.reported}
+  isSuspended={!!post.isSuspended}
+/>
 
         </div>
 
