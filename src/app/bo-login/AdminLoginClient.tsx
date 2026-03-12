@@ -1,4 +1,3 @@
-// src/app/bo-login/AdminLoginClient.tsx
 "use client";
 
 import { useState } from "react";
@@ -10,7 +9,7 @@ export default function AdminLoginClient() {
   const sp = useSearchParams();
   const next = sp.get("next") || "/bo";
 
-  const [email, setEmail] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,7 +24,7 @@ export default function AdminLoginClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ employeeId, password }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -36,7 +35,6 @@ export default function AdminLoginClient() {
         return;
       }
 
-      // full reload so middleware sees cookie
       window.location.href = next;
     } catch (e: any) {
       setErr(e?.message || "Login failed");
@@ -58,10 +56,11 @@ export default function AdminLoginClient() {
 
         <form className="space-y-3" onSubmit={submit}>
           <Input
-            placeholder="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Employee ID"
+            value={employeeId}
+            onChange={(e) => setEmployeeId(e.target.value)}
           />
+
           <Input
             placeholder="Password"
             type="password"

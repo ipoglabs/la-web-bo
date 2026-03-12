@@ -1,3 +1,4 @@
+// src/app/bo/users/page.tsx (SERVER)
 import connectDB from "@/config/database"
 import User from "@/models/user"
 import BoUsersClient from "./BoUsersClient"
@@ -10,7 +11,7 @@ export default async function BoUsersPage() {
     .sort({ createdAt: -1 })
     .lean()
 
-  // ✅ serialize for client
+  // 🚨 serialize for client
   const data = users.map((u: any) => ({
     id: u._id.toString(),
     firstName: u.firstName,
@@ -20,7 +21,5 @@ export default async function BoUsersPage() {
     createdAt: u.createdAt.toISOString(),
   }))
 
-  return (
-    <BoUsersClient data={data} />
-  )
+  return <BoUsersClient data={data} />
 }

@@ -33,7 +33,7 @@ export default async function BoPostsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Posts</h1>
 
-      {/* ✅ Client component boundary */}
+      {/* ✅ Client boundary */}
       <BoPostsClient data={data} />
     </div>
   )

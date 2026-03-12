@@ -7,8 +7,8 @@ import {
   MessageSquare,
   ShieldPlus,
   UserCog,
+  Flag,
 } from "lucide-react"
-
 
 import { ADMIN_COOKIE, verifyAdminJwt, isAdminRole } from "@/lib/adminAuth"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -39,6 +39,8 @@ export default async function BoDashboard({
   const role = session.role
   const created = searchParams?.created === "1"
 
+  const isAdminLevel = role === "super_admin" || role === "admin"
+
   return (
     <div className="space-y-6">
       {/* Success banner */}
@@ -60,6 +62,8 @@ export default async function BoDashboard({
 
       {/* Dashboard cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+        {/* Users */}
         {hasPerm(role, "users.manage") && (
           <Link href="/bo/users">
             <Card className="hover:bg-muted/40 transition">
@@ -74,6 +78,7 @@ export default async function BoDashboard({
           </Link>
         )}
 
+        {/* Ads */}
         {hasPerm(role, "posts.manage") && (
           <Link href="/bo/posts">
             <Card className="hover:bg-muted/40 transition">
@@ -88,6 +93,7 @@ export default async function BoDashboard({
           </Link>
         )}
 
+        {/* Communications */}
         {hasPerm(role, "comm.manage") && (
           <Link href="/bo/communications">
             <Card className="hover:bg-muted/40 transition">
@@ -102,6 +108,7 @@ export default async function BoDashboard({
           </Link>
         )}
 
+        {/* Create BO user */}
         {(role === "super_admin" || role === "admin") && (
           <Link href="/bo/register">
             <Card className="hover:bg-muted/40 transition border-dashed">
@@ -116,20 +123,50 @@ export default async function BoDashboard({
           </Link>
         )}
 
-        {["super_admin", "admin"].includes(role) && (
-  <Link href="/bo/employees">
-    <Card className="hover:bg-muted/40 transition">
-      <CardHeader>
-        <Users className="h-6 w-6 text-muted-foreground" />
-        <CardTitle>BO Employees</CardTitle>
-        <CardDescription>
-          Admin, moderator, support and analyst users
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  </Link>
-)}
+        {/* BO Employees */}
+        {(role === "super_admin" || role === "admin") && (
+          <Link href="/bo/employees">
+            <Card className="hover:bg-muted/40 transition">
+              <CardHeader>
+                <UserCog className="h-6 w-6 text-muted-foreground" />
+                <CardTitle>BO Employees</CardTitle>
+                <CardDescription>
+                  Admin, moderator, support and analyst users
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        )}
 
+        {/* 🚩 Reported Users */}
+        {isAdminLevel && (
+          <Link href="/bo/reports/users">
+            <Card className="hover:bg-muted/40 transition border border-red-200">
+              <CardHeader>
+                <Flag className="h-6 w-6 text-red-500" />
+                <CardTitle>Reported Users</CardTitle>
+                <CardDescription>
+                  Review users reported for abuse or violations
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        )}
+
+        {/* 🚩 Reported Posts */}
+        {isAdminLevel && (
+          <Link href="/bo/reports/posts">
+            <Card className="hover:bg-muted/40 transition border border-red-200">
+              <CardHeader>
+                <Flag className="h-6 w-6 text-red-500" />
+                <CardTitle>Reported Posts</CardTitle>
+                <CardDescription>
+                  Review and take action on reported ads
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        )}
 
       </div>
     </div>

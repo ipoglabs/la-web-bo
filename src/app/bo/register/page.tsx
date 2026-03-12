@@ -101,7 +101,7 @@ export default function AdminRegisterPage() {
           <Input placeholder="First name" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} />
           <Input placeholder="Last name" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} />
           <Input placeholder="Designation" value={form.designation} onChange={(e) => update("designation", e.target.value)} />
-          <Input placeholder="Employee ID" value={form.employeeId} onChange={(e) => update("employeeId", e.target.value)} />
+          {/* <Input placeholder="Employee ID (Auto Generated)"  value="Auto Generated"  disabled /> */}
           <Input placeholder="Age" value={form.age} onChange={(e) => update("age", e.target.value)} />
 
           <select className="border h-10 px-3" value={form.role} onChange={(e) => update("role", e.target.value)}>

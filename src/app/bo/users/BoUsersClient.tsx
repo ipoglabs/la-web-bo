@@ -1,7 +1,8 @@
+// src/app/bo/users/BoUsersClient.tsx
 "use client"
 
-import { columns } from "./columns"
 import { DataTable } from "../components/data-table"
+import { columns } from "./columns"
 
 export default function BoUsersClient({ data }: { data: any[] }) {
   return (

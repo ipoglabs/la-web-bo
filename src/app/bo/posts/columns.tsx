@@ -2,9 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { updatePostStatus } from "../actions/updatePostStatus"
 import { useRouter } from "next/navigation"
-import { useTransition } from "react"
 
 export type BoPost = {
   id: string
@@ -16,64 +14,16 @@ export type BoPost = {
 }
 
 function ActionCell({ post }: { post: BoPost }) {
-  const [pending, start] = useTransition()
   const router = useRouter()
 
-  const update = (status: "active" | "off" | "expired") => {
-    start(async () => {
-      const res = await updatePostStatus(post.id, status)
-      if (!res?.ok) {
-        alert(res?.error || "Update failed")
-        return
-      }
-      router.refresh()
-    })
-  }
-
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* 👁 View */}
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => router.push(`/bo/posts/${post.id}`)}
-      >
-        View
-      </Button>
-
-      {/* ✅ Approve */}
-      {post.status !== "active" && (
-        <Button
-          size="sm"
-          disabled={pending}
-          onClick={() => update("active")}
-        >
-          {pending ? "Saving…" : "Approve"}
-        </Button>
-      )}
-
-      {/* ⏸ Pause */}
-      {post.status === "active" && (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={pending}
-          onClick={() => update("off")}
-        >
-          {pending ? "Saving…" : "Pause"}
-        </Button>
-      )}
-
-      {/* ❌ Reject */}
-      <Button
-        size="sm"
-        variant="destructive"
-        disabled={pending}
-        onClick={() => update("expired")}
-      >
-        {pending ? "Saving…" : "Reject"}
-      </Button>
-    </div>
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => router.push(`/bo/posts/${post.id}`)}
+    >
+      View
+    </Button>
   )
 }
 

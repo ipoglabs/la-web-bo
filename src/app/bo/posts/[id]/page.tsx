@@ -1,131 +1,140 @@
 import connectDB from "@/config/database"
 import Post from "@/models/post"
 import User from "@/models/user"
+import ReportPostConversation from "@/models/reportPostConversation"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import AdminPostActions from "./AdminPostActions"
 import { Types } from "mongoose"
+import AdminPostActions from "./AdminPostActions"
+import ReportPostChatPanel from "./ReportPostChatPanel"
+import { cookies } from "next/headers"
+import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 
-function fmt(d?: any) {
-  if (!d) return "-"
-  const dt = new Date(d)
-  if (Number.isNaN(dt.getTime())) return "-"
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    hour12: true,
-    timeZone: "Asia/Kolkata",
-  }).format(dt)
-}
-
-/**
- * ✅ IMPORTANT:
- * params is a Promise in Next.js 16
- */
 export default async function BoPostDetailsPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params   // ✅ FIX
 
-  if (!Types.ObjectId.isValid(id)) {
-    return notFound()
-  }
+  const { id } = await params
+
+  if (!Types.ObjectId.isValid(id)) return notFound()
+
+  const cookieStore = await cookies()
+  const token = cookieStore.get(ADMIN_COOKIE)?.value || ""
+  const session = token ? verifyAdminJwt(token) : null
 
   await connectDB()
 
   const post = await Post.findById(id).lean()
+
   if (!post) return notFound()
+
+  const fraudScore = post.reports?.length || 0
 
   const owner = post.ownerId
     ? await User.findById(post.ownerId).lean()
     : null
 
+  const conversation = await ReportPostConversation
+    .findOne({ postId: new Types.ObjectId(id) })
+    .lean()
+
+  const messages = (conversation?.messages || []).map((m: any) => ({
+    id: m._id.toString(),
+    sender: m.senderEmail,
+    text: m.text,
+    at: m.createdAt,
+  }))
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+
+    <div className="space-y-6">
+
       <Link href="/bo/posts" className="text-sm text-blue-600 underline">
         ← Back to posts
       </Link>
 
-      {/* Header */}
-      <div className="bg-white p-5 rounded-xl shadow border">
-        <h1 className="text-2xl font-semibold">{post.name}</h1>
-        <p className="text-sm text-slate-600 mt-1">
-          {post.category} • {post.subcategory}
-        </p>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-        <div className="mt-3 text-sm">
-          Status: <b className="capitalize">{post.status}</b>
-        </div>
+        {/* LEFT SIDE */}
+        <div className="xl:col-span-2 space-y-6">
 
-        <div className="mt-1 text-xs text-slate-500">
-          Created: {fmt(post.createdAt)} <br />
-          Updated: {fmt(post.updatedAt)}
-        </div>
-      </div>
+          <div className="bg-white p-5 rounded-xl border shadow">
 
-      {/* Owner */}
-      <div className="bg-white p-5 rounded-xl shadow border">
-        <h2 className="font-semibold mb-2">Posted By</h2>
+            <h1 className="text-2xl font-semibold">{post.name}</h1>
 
-        {owner ? (
-          <div className="text-sm space-y-1">
-            <div>
-              Name: <b>{owner.firstName} {owner.lastName}</b>
+            <p className="text-sm text-muted-foreground">
+              {post.category} • {post.subcategory}
+            </p>
+
+            <div className="mt-2 text-sm">
+
+              Status: <b className="capitalize">{post.status}</b>
+
+              {post.reported && (
+                <span className="ml-3 text-red-600 font-medium">
+                  ⚠ Reported
+                </span>
+              )}
+
+              {fraudScore > 0 && (
+                <span className="ml-3 text-orange-600">
+                  Fraud Score: {fraudScore}
+                </span>
+              )}
+
             </div>
-            <div>Email: {owner.email}</div>
-            <div>Phone: {owner.primaryNumber || "-"}</div>
-            <div>Role: {owner.role}</div>
+
           </div>
-        ) : (
-          <div className="text-sm">
-            Email: {post.seller_info?.email || "-"}
+
+          <div className="bg-white p-5 rounded-xl border shadow">
+
+            <h2 className="font-semibold mb-2">Posted By</h2>
+
+            {owner ? (
+              <div className="text-sm">
+                {owner.firstName} {owner.lastName} — {owner.email}
+              </div>
+            ) : (
+              <div className="text-sm">
+                {post.seller_info?.email}
+              </div>
+            )}
+
           </div>
-        )}
+
+          <div className="bg-white p-5 rounded-xl border shadow">
+
+            <h2 className="font-semibold mb-2">Description</h2>
+
+            <p className="text-sm whitespace-pre-line">
+              {post.description || "-"}
+            </p>
+
+          </div>
+
+          <AdminPostActions
+            postId={post._id.toString()}
+            status={post.status}
+            role={session?.role}
+            reported={!!post.reported}
+            isSuspended={!!post.isSuspended}
+          />
+
+        </div>
+
+        {/* RIGHT SIDE CHAT */}
+
+        <ReportPostChatPanel
+          postId={id}
+          postTitle={post.name}
+          messages={messages}
+        />
+
       </div>
 
-      {/* Description */}
-      <div className="bg-white p-5 rounded-xl shadow border">
-        <h2 className="font-semibold mb-2">Description</h2>
-        <p className="text-sm whitespace-pre-line">
-          {post.description || "-"}
-        </p>
-      </div>
-
-      {/* Location */}
-      {post.location && (
-        <div className="bg-white p-5 rounded-xl shadow border">
-          <h2 className="font-semibold mb-2">Location</h2>
-          <pre className="text-sm text-slate-700 whitespace-pre-wrap">
-            {JSON.stringify(post.location, null, 2)}
-          </pre>
-        </div>
-      )}
-
-      {/* Images */}
-      {Array.isArray(post.images) && post.images.length > 0 && (
-        <div className="bg-white p-5 rounded-xl shadow border">
-          <h2 className="font-semibold mb-3">Images</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {post.images.map((img: string, i: number) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={i}
-                src={img}
-                alt=""
-                className="rounded border object-cover h-40 w-full"
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Admin actions */}
-      <AdminPostActions
-        postId={post._id.toString()}
-        status={String(post.status)}
-      />
     </div>
+
   )
 }
