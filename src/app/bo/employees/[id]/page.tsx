@@ -31,7 +31,7 @@ export default async function BoEmployeeDetails({
 
   const employee = await AdminUser.findById(id)
     .select(
-      "firstName lastName email role isActive country location designation age gender createdAt"
+      "employeeId firstName lastName email role isActive country location designation age gender createdAt"
     )
     .lean()
 
@@ -48,9 +48,18 @@ export default async function BoEmployeeDetails({
 
       <div className="bg-white rounded-xl border shadow p-6 space-y-4">
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold">
-            {employee.firstName} {employee.lastName}
-          </h1>
+          <div>
+  <h1 className="text-2xl font-semibold">
+    {employee.firstName} {employee.lastName}
+  </h1>
+
+  <p className="text-sm text-muted-foreground">
+    Employee ID:{" "}
+    <span className="font-medium text-foreground">
+      {employee.employeeId || "-"}
+    </span>
+  </p>
+</div>
 
           <EmployeeActions
             id={id}
