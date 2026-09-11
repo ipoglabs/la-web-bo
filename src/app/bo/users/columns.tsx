@@ -5,35 +5,29 @@ import Link from "next/link"
 
 export type BoUser = {
   id: string          // ✅ use id, not _id
-  firstName: string
-  lastName: string
+  fullName: string
   email: string
-  role: string
+  publicRole: string
   createdAt: string
 }
 
 export const columns: ColumnDef<BoUser>[] = [
   {
-    accessorKey: "firstName",
+    accessorKey: "fullName",
     header: "Name",
-    cell: ({ row }) => {
-      const u = row.original
-      return (
-        <div className="font-medium">
-          {u.firstName} {u.lastName}
-        </div>
-      )
-    },
+    cell: ({ row }) => (
+      <div className="font-medium">{row.original.fullName}</div>
+    ),
   },
   {
     accessorKey: "email",
     header: "Email",
   },
   {
-    accessorKey: "role",
+    accessorKey: "publicRole",
     header: "Role",
     cell: ({ row }) => (
-      <span className="capitalize">{row.getValue("role")}</span>
+      <span className="capitalize">{row.getValue("publicRole")}</span>
     ),
   },
   {

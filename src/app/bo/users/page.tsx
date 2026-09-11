@@ -7,17 +7,16 @@ export default async function BoUsersPage() {
   await connectDB()
 
   const users = await User.find()
-    .select("firstName lastName email role createdAt")
+    .select("fullName email publicRole createdAt")
     .sort({ createdAt: -1 })
     .lean()
 
   // 🚨 serialize for client
   const data = users.map((u: any) => ({
     id: u._id.toString(),
-    firstName: u.firstName,
-    lastName: u.lastName,
+    fullName: u.fullName,
     email: u.email,
-    role: u.role,
+    publicRole: u.publicRole,
     createdAt: u.createdAt.toISOString(),
   }))
 

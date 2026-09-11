@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       userId: String((user as any)._id),
       email: (user as any).email,
       primaryNumber: (user as any).primaryNumber,
-      role: (user as any).role ?? "user",
+      publicRole: (user as any).publicRole ?? "user",
     });
 
     const res = NextResponse.json(
@@ -67,9 +67,8 @@ export async function POST(req: Request) {
         user: {
           id: String((user as any)._id),
           email: (user as any).email,
-          firstName: (user as any).firstName,
-          lastName: (user as any).lastName,
-          role: (user as any).role ?? "user",
+          fullName: (user as any).fullName,
+          publicRole: (user as any).publicRole ?? "user",
           primaryNumber: (user as any).primaryNumber,
           locality: (user as any).locality,
         },

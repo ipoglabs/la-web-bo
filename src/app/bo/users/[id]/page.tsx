@@ -45,15 +45,13 @@ export default async function BoUserAds({
 
   const user = await User.findById(id)
     .select([
-      "firstName",
-      "lastName",
+      "fullName",
       "email",
       "image",
       "isEmailVerified",
       "isPrimaryNumberVerified",
       "accountStatus",
       "isSuspended",
-      "reported",
     ])
     .lean<any>();
 
@@ -87,7 +85,6 @@ export default async function BoUserAds({
           viewerRole={session.role}
           userId={id}
           userEmail={user.email}
-          isReported={!!user.reported}
           isSuspended={isSuspended}
         />
       </div>
@@ -95,7 +92,7 @@ export default async function BoUserAds({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">
-            Ads by {user.firstName} {user.lastName}
+            Ads by {user.fullName}
           </h1>
           <div className="text-sm text-slate-600">{user.email}</div>
 
@@ -114,7 +111,6 @@ export default async function BoUserAds({
               }
             />
 
-            {user.reported ? <Pill ok={false} label="Reported" /> : null}
             {isSuspended ? <Pill ok={false} label="Suspended" /> : null}
           </div>
         </div>
@@ -122,7 +118,7 @@ export default async function BoUserAds({
         {user.image ? (
           <img
             src={user.image}
-            alt={user.firstName}
+            alt={user.fullName}
             className="h-16 w-16 rounded-full border object-cover"
           />
         ) : null}

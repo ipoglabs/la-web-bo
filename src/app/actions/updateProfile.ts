@@ -8,13 +8,11 @@ import cloudinary from "@/config/cloudinary";
 import mongoose from "mongoose";
 
 type UpdatePayload = {
-  firstName?: string;
-  lastName?: string;
+  fullName?: string;
   dateOfBirth?: string;
   gender?: "Male" | "Female" | "Other";
   nationality?: string;
   residency?: string;
-  username?: string;
   primaryNumber?: string;
   secondaryNumber1?: string;
   secondaryNumber2?: string;
@@ -40,13 +38,11 @@ export async function updateProfile(
 
   // Map form fields
   const payload: UpdatePayload = {
-    firstName: (form.get("firstName") as string) || undefined,
-    lastName: (form.get("lastName") as string) || undefined,
+    fullName: (form.get("fullName") as string) || undefined,
     dateOfBirth: (form.get("dateOfBirth") as string) || undefined,
     gender: (form.get("gender") as any) || undefined,
     nationality: (form.get("nationality") as string) || undefined,
     residency: (form.get("residency") as string) || undefined,
-    username: (form.get("username") as string) || undefined,
     primaryNumber: (form.get("primaryNumber") as string) || undefined,
     secondaryNumber1: (form.get("secondaryNumber1") as string) || undefined,
     secondaryNumber2: (form.get("secondaryNumber2") as string) || undefined,

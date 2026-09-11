@@ -9,7 +9,7 @@ export type BoPost = {
   name: string
   category: string
   subcategory: string
-  status: "active" | "off" | "expired" | "pending"
+  status: "active" | "off" | "expired" | "pending" | "rejected" | "closed" | "deleted"
   ownerEmail?: string
 }
 

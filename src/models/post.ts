@@ -1,3 +1,11 @@
+// src/models/post.ts
+//
+// Mirrors la-web's real `posts` collection schema exactly (same MongoDB
+// database) — this used to be a bo-only guess with an invented
+// reported/reports[]/reportedAt/reportedBy moderation shape that never
+// existed in the real documents (real ad reports live in the separate
+// AdReport collection, @/models/adReport). Keep this in sync with la-web's
+// src/models/post.ts if that schema changes.
 import mongoose, {
   Schema,
   models,
@@ -13,10 +21,15 @@ export interface IPost {
   category: string;
   subcategory: string;
 
-  ownerId?: mongoose.Types.ObjectId;
+  /** Market this post belongs to (lowercase ISO code, e.g. "in" | "gb" | "sg"). */
+  country?: string;
 
-  status?: "pending" | "active" | "off" | "expired" | "deleted";
-  expiresAt?: Date;
+  ownerId?: mongoose.Types.ObjectId;
+  adsId?: string;
+
+  status?: "pending" | "active" | "rejected" | "off" | "expired" | "closed" | "deleted";
+  rejectionReason?: string;
+  expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
 
@@ -32,7 +45,7 @@ export interface IPost {
     email: string;
   };
 
-  /** ===== Property ===== */
+  /** ===== Property / Rental / Commercial ===== */
   propertyType?: string;
   beds?: number;
   baths?: number;
@@ -74,7 +87,7 @@ export interface IPost {
   ownership?: string;
   age?: string;
 
-  /** ===== Search ===== */
+  /** Search constraints (Wanted posts) */
   minBudget?: number;
   maxBudget?: number;
   minArea?: number;
@@ -168,24 +181,16 @@ export interface IPost {
   durationText?: string;
 
   level?: string;
+
   urgency?: string;
 
-  /** 🔴 Moderation (IMPORTANT FIX) */
-
-  reported?: boolean;
-
-  reports?: {
-    reason?: string;
-    by?: mongoose.Types.ObjectId;
-    at?: Date;
-  }[];
-
-  reportedAt?: Date;
-  reportedBy?: mongoose.Types.ObjectId;
-
+  /** ===== Moderation ===== */
   isSuspended?: boolean;
   suspendedAt?: Date;
   suspendedBy?: mongoose.Types.ObjectId;
+
+  /** Real page-view counter — incremented on each listing-detail page load. */
+  viewCount?: number;
 
   createdAt?: Date;
   updatedAt?: Date;
@@ -200,22 +205,24 @@ const PostSchema = new Schema<IPost>(
     images: { type: [String], default: [] },
     category: { type: String, required: true, index: true },
     subcategory: { type: String, required: true, index: true },
+    country: { type: String, lowercase: true, trim: true, index: true },
 
     ownerId: { type: Schema.Types.ObjectId, ref: "User", index: true },
-
+    adsId: { type: String, unique: true, index: true },
     status: {
       type: String,
-      enum: ["pending", "active", "off", "expired", "deleted"],
+      enum: ["pending", "active", "rejected", "off", "expired", "closed", "deleted"],
       default: "pending",
       index: true,
     },
-
+    rejectionReason: { type: String },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },
+    viewCount: { type: Number, default: 0 },
 
     location: {
-      address: String,
+      address: { type: String },
       lat: Number,
       lng: Number,
     },
@@ -223,7 +230,7 @@ const PostSchema = new Schema<IPost>(
     seller_info: {
       name: { type: String, required: true },
       phone: { type: String, required: true },
-      email: { type: String, required: true, index: true },
+      email: { type: String, required: true, lowercase: true, trim: true, index: true },
     },
 
     propertyType: String,
@@ -234,43 +241,154 @@ const PostSchema = new Schema<IPost>(
     deposit: Number,
     facilities: { type: [String], default: [] },
     amenities: { type: [String], default: [] },
+    occupancy: String,
+    gender_pref: String,
 
-    /* 🔴 Moderation */
+    builtup_area: Number,
+    carpet_area: Number,
+    floor: Number,
+    totalFloors: Number,
+    furnishing: String,
+    washrooms: Number,
+    pantry: String,
+    parkingSpaces: Number,
+    maintenance: Number,
+    available_from: String,
+    leaseTerm: Number,
+    powerBackup: String,
 
-    reported: { type: Boolean, default: false, index: true },
+    holidayType: String,
+    guests: Number,
+    house_rules: { type: [String], default: [] },
+    rateNightly: Number,
+    rateWeekly: Number,
+    rateMonthly: Number,
 
-    reports: [
-      {
-        reason: String,
-        by: { type: Schema.Types.ObjectId, ref: "AdminUser" },
-        at: { type: Date, default: Date.now },
-      },
-    ],
+    type: String,
+    rent: Number,
+    preferred_tenants: String,
+    rules: { type: [String], default: [] },
 
-    reportedAt: Date,
+    plot_area: Number,
+    negotiable: String,
+    ownership: String,
+    age: String,
 
-    reportedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "AdminUser",
+    minBudget: Number,
+    maxBudget: Number,
+    minArea: Number,
+    preferred_locations: { type: [String], default: [] },
+
+    company: String,
+    clientName: String,
+    jobType: String,
+    workMode: String,
+    salary: Number,
+    hourlyRate: Number,
+    stipendType: String,
+    stipendAmount: Number,
+    startDate: String,
+    endDate: String,
+    duration: String,
+    contractDuration: String,
+    workingHours: String,
+    deadline: String,
+    applyLink: String,
+    projectType: String,
+    budgetType: String,
+    budgetAmount: Number,
+    experience: String,
+    skills: { type: [String], default: [] },
+    benefits: { type: [String], default: [] },
+    shifts: { type: [String], default: [] },
+
+    candidateName: String,
+
+    make: String,
+    model: String,
+    year: Number,
+    kms: Number,
+    fuelType: String,
+    transmission: String,
+    bodyType: String,
+    color: String,
+    condition: String,
+    ownerType: String,
+    registrationNumber: String,
+    insuranceValidTill: String,
+    serviceHistory: String,
+    features: { type: [String], default: [] },
+    engineCapacity: Number,
+    seatingCapacity: Number,
+
+    petName: String,
+    petType: String,
+    breed: String,
+    ageText: String,
+    gender: String,
+    vaccination: String,
+    size: String,
+    wantedPetType: String,
+    breedPreference: String,
+    agePreference: String,
+    genderPreference: String,
+    sizePreference: String,
+    budget: Number,
+    accessoryName: String,
+    partsCategory: String,
+    reportType: String,
+    lastSeenLocation: String,
+    lfDate: String,
+    serviceType: String,
+    serviceProviderName: String,
+    availability: String,
+
+    educationType: String,
+    subject: String,
+    mode: String,
+    qualification: String,
+    price: Number,
+
+    cuisineType: String,
+    dietaryOptions: { type: [String], default: [] },
+    deliveryAvailable: String,
+
+    providerName: String,
+    consultationMode: String,
+
+    rateType: String,
+
+    destination: String,
+    packageDetails: String,
+    agencyName: String,
+    durationText: String,
+
+    level: String,
+
+    urgency: String,
+
+    /* Moderation — real ad reports live on the separate AdReport collection
+       (@/models/adReport), not embedded here. */
+
+    isSuspended: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
-
-    isSuspended: { type: Boolean, default: false, index: true },
 
     suspendedAt: Date,
 
     suspendedBy: {
       type: Schema.Types.ObjectId,
-      ref: "AdminUser",
+      ref: "User",
     },
   },
   { timestamps: true }
 );
 
-/** Indexes */
 PostSchema.index({ ownerId: 1, updatedAt: -1 });
-PostSchema.index({ status: 1, updatedAt: -1 });
-PostSchema.index({ reported: 1, createdAt: -1 });
-PostSchema.index({ isSuspended: 1 });
+PostSchema.index({ status: 1, country: 1, category: 1, createdAt: -1 });
+PostSchema.index({ status: 1, lastBumpedAt: -1, createdAt: -1 });
 
 const Post: Model<IPost> =
   (models.Post as Model<IPost>) || model<IPost>("Post", PostSchema);

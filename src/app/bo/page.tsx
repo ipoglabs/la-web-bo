@@ -138,30 +138,15 @@ export default async function BoDashboard({
           </Link>
         )}
 
-        {/* 🚩 Reported Users */}
-        {isAdminLevel && (
-          <Link href="/bo/reports/users">
-            <Card className="hover:bg-muted/40 transition border border-red-200">
-              <CardHeader>
-                <Flag className="h-6 w-6 text-red-500" />
-                <CardTitle>Reported Users</CardTitle>
-                <CardDescription>
-                  Review users reported for abuse or violations
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-        )}
-
-        {/* 🚩 Reported Posts */}
+        {/* 🚩 Ad Reports — real end-user reports (AdReport collection) */}
         {isAdminLevel && (
           <Link href="/bo/reports/posts">
             <Card className="hover:bg-muted/40 transition border border-red-200">
               <CardHeader>
                 <Flag className="h-6 w-6 text-red-500" />
-                <CardTitle>Reported Posts</CardTitle>
+                <CardTitle>Ad Reports</CardTitle>
                 <CardDescription>
-                  Review and take action on reported ads
+                  Review and take action on ads reported by users
                 </CardDescription>
               </CardHeader>
             </Card>

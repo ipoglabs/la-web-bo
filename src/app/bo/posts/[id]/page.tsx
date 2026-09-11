@@ -1,12 +1,12 @@
 import connectDB from "@/config/database"
 import Post from "@/models/post"
 import User from "@/models/user"
-import ReportPostConversation from "@/models/reportPostConversation"
+import AdReport from "@/models/adReport"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Types } from "mongoose"
 import AdminPostActions from "./AdminPostActions"
-import ReportPostChatPanel from "./ReportPostChatPanel"
+import { REPORT_ISSUE_LABELS } from "@/lib/reportIssueLabels"
 import { cookies } from "next/headers"
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 
@@ -30,22 +30,15 @@ export default async function BoPostDetailsPage({
 
   if (!post) return notFound()
 
-  const fraudScore = post.reports?.length || 0
-
   const owner = post.ownerId
     ? await User.findById(post.ownerId).lean()
     : null
 
-  const conversation = await ReportPostConversation
-    .findOne({ postId: new Types.ObjectId(id) })
-    .lean()
-
-  const messages = (conversation?.messages || []).map((m: any) => ({
-    id: m._id.toString(),
-    sender: m.senderEmail,
-    text: m.text,
-    at: m.createdAt,
-  }))
+  // Real end-user ad reports (submitted from the live site) reference this
+  // post by its display id (adsId), not the Mongo _id — see models/adReport.ts.
+  const reports = post.adsId
+    ? await AdReport.find({ adId: post.adsId }).sort({ createdAt: -1 }).lean()
+    : []
 
   return (
 
@@ -72,15 +65,9 @@ export default async function BoPostDetailsPage({
 
               Status: <b className="capitalize">{post.status}</b>
 
-              {post.reported && (
+              {reports.length > 0 && (
                 <span className="ml-3 text-red-600 font-medium">
-                  ⚠ Reported
-                </span>
-              )}
-
-              {fraudScore > 0 && (
-                <span className="ml-3 text-orange-600">
-                  Fraud Score: {fraudScore}
+                  ⚠ {reports.length} report{reports.length === 1 ? "" : "s"}
                 </span>
               )}
 
@@ -94,7 +81,7 @@ export default async function BoPostDetailsPage({
 
             {owner ? (
               <div className="text-sm">
-                {owner.firstName} {owner.lastName} — {owner.email}
+                {owner.fullName} — {owner.email}
               </div>
             ) : (
               <div className="text-sm">
@@ -114,23 +101,43 @@ export default async function BoPostDetailsPage({
 
           </div>
 
-         <AdminPostActions
-  postId={post._id.toString()}
-  status={post.status ?? "pending"}
-  role={session?.role}
-  reported={!!post.reported}
-  isSuspended={!!post.isSuspended}
-/>
+          <AdminPostActions
+            postId={post._id.toString()}
+            status={post.status ?? "pending"}
+            role={session?.role}
+            isSuspended={!!post.isSuspended}
+          />
 
         </div>
 
-        {/* RIGHT SIDE CHAT */}
+        {/* RIGHT SIDE — real ad reports */}
+        <div className="bg-white rounded-xl border shadow p-5 space-y-4 h-fit">
 
-        <ReportPostChatPanel
-          postId={id}
-          postTitle={post.name}
-          messages={messages}
-        />
+          <h2 className="font-semibold">Ad Reports ({reports.length})</h2>
+
+          {reports.length === 0 && (
+            <p className="text-sm text-muted-foreground">No reports for this ad.</p>
+          )}
+
+          {reports.map((r: any) => (
+            <div key={r._id.toString()} className="border rounded-lg p-3 text-sm space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-muted-foreground">{r.ticketId}</span>
+                <span className="capitalize text-xs font-medium">{r.status}</span>
+              </div>
+              <ul className="list-disc list-inside">
+                {(r.issues || []).map((issue: string) => (
+                  <li key={issue}>{REPORT_ISSUE_LABELS[issue as keyof typeof REPORT_ISSUE_LABELS] ?? issue}</li>
+                ))}
+              </ul>
+              {r.details && <p className="text-muted-foreground">{r.details}</p>}
+              <Link href="/bo/reports/posts" className="text-blue-600 hover:underline text-xs">
+                Review in Ad Reports →
+              </Link>
+            </div>
+          ))}
+
+        </div>
 
       </div>
 

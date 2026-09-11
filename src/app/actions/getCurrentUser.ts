@@ -26,8 +26,7 @@ export async function getCurrentUser() {
 
   return {
     id: String(user._id),
-    firstName: user.firstName,
-    lastName: user.lastName,
+    fullName: user.fullName,
     dateOfBirth: user.dateOfBirth
       ? new Date(user.dateOfBirth).toISOString().slice(0, 10)
       : "",
@@ -35,11 +34,10 @@ export async function getCurrentUser() {
     nationality: user.nationality,
     residency: user.residency,
     email: user.email,
-    username: user.username,
     primaryNumber: user.primaryNumber,
     secondaryNumber1: user.secondaryNumber1 || "",
     secondaryNumber2: user.secondaryNumber2 || "",
-    role: user.role,
+    publicRole: user.publicRole,
     image: user.image || "",
     marketingOptIn: !!user.marketingOptIn,
   };

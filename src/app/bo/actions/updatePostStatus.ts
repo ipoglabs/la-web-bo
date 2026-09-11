@@ -12,7 +12,7 @@ function isAllowedToModeratePosts(role?: string) {
 
 export async function updatePostStatus(
   postId: string,
-  status: "active" | "off" | "expired"
+  status: "active" | "off" | "expired" | "rejected"
 ) {
   try {
     if (!Types.ObjectId.isValid(postId)) {

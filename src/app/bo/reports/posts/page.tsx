@@ -2,141 +2,130 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import connectDB from "@/config/database"
+import AdReport from "@/models/adReport"
 import Post from "@/models/post"
-import AdminUser from "@/models/adminUser"
-import ViewReportsModal from "./ViewReportsModal"
-import ClearPostReportButton from "./ClearPostReportButton"
+import ViewReportModal from "./ViewReportModal"
+import ReviewReportButtons from "./ReviewReportButtons"
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 
-export default async function ReportedPostsPage() {
+const STATUS_STYLE: Record<string, string> = {
+  pending: "text-amber-700 bg-amber-50",
+  reviewed: "text-blue-700 bg-blue-50",
+  actioned: "text-green-700 bg-green-50",
+  dismissed: "text-slate-500 bg-slate-100",
+}
+
+export default async function AdReportsPage() {
 
   const token = (await cookies()).get(ADMIN_COOKIE)?.value || ""
   const session = token ? verifyAdminJwt(token) : null
 
-  if (!session || !["super_admin", "admin"].includes(session.role)) {
+  if (!session || !["super_admin", "admin", "moderator"].includes(session.role)) {
     redirect("/bo")
   }
 
   await connectDB()
 
-  AdminUser
-
-  const posts = await Post.find({ reported: true })
-    .populate({
-      path: "reports.by",
-      model: "AdminUser",
-      select: "email role",
-    })
+  const reports = await AdReport.find({})
+    .sort({ createdAt: -1 })
     .lean()
 
-  const sortedPosts = posts
-    .map((p: any) => {
+  // AdReport.adId is the listing's display id (Post.adsId), not the Mongo
+  // _id — resolve it here so "View Ad" can link to the real bo/posts/[id].
+  const adIds = [...new Set(reports.map((r: any) => r.adId).filter(Boolean))]
+  const posts = adIds.length
+    ? await Post.find({ adsId: { $in: adIds } }).select("adsId").lean()
+    : []
+  const postIdByAdsId = new Map(posts.map((p: any) => [p.adsId, p._id.toString()]))
 
-      const reports = (p.reports || []).map((r: any) => ({
-        reason: r.reason || "",
-        at: r.at ? new Date(r.at).toISOString() : null,
-        by: r.by
-          ? {
-              email: r.by.email || "",
-              role: r.by.role || "",
-            }
-          : null,
-      }))
-
-      const latestReport =
-        reports.length > 0 ? reports[reports.length - 1] : null
-
-      return {
-        id: p._id.toString(),
-        name: p.name,
-        category: p.category,
-        reports,
-        latestReport,
-        reportCount: reports.length,
-      }
-    })
-    .sort(
-      (a: any, b: any) =>
-        new Date(b.latestReport?.at || 0).getTime() -
-        new Date(a.latestReport?.at || 0).getTime()
-    )
+  const rows = reports.map((r: any) => ({
+    id: r._id.toString(),
+    ticketId: r.ticketId,
+    adId: r.adId,
+    postId: postIdByAdsId.get(r.adId) || null,
+    adTitle: r.adTitle,
+    sellerName: r.sellerName,
+    issues: r.issues || [],
+    details: r.details || "",
+    priority: r.priority,
+    status: r.status,
+    resolution: r.resolution,
+    reporterEmail: r.hideIdentity ? null : r.reporterEmail,
+    createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : null,
+  }))
 
   return (
     <div className="space-y-6">
 
-      <h1 className="text-2xl font-semibold">
-        🚩 Reported Posts
-      </h1>
+      <h1 className="text-2xl font-semibold">🚩 Ad Reports</h1>
+      <p className="text-sm text-muted-foreground">
+        Reports submitted by real users from the live site (POST /api/reports) — bo only reviews these.
+      </p>
 
-      <div className="bg-white rounded-xl border shadow">
+      <div className="bg-white rounded-xl border shadow overflow-x-auto">
 
         <table className="w-full text-sm">
 
           <thead className="bg-muted border-b">
             <tr>
-              <th className="p-3 text-left">Post</th>
-              <th className="p-3 text-left">Category</th>
-              <th className="p-3 text-center">Reports</th>
-              <th className="p-3 text-left">Latest Reason</th>
-              <th className="p-3 text-left">Last Reported At</th>
-              <th className="p-3 text-left">History</th>
+              <th className="p-3 text-left">Ticket</th>
+              <th className="p-3 text-left">Ad</th>
+              <th className="p-3 text-left">Priority</th>
+              <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-left">Reported At</th>
+              <th className="p-3 text-left">Details</th>
               <th className="p-3 text-right">Action</th>
             </tr>
           </thead>
 
           <tbody>
 
-            {sortedPosts.map((p: any) => (
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b align-top">
 
-              <tr key={p.id} className="border-b">
+                <td className="p-3 font-mono text-xs">{r.ticketId}</td>
 
-                <td className="p-3 font-medium">
-                  {p.name}
+                <td className="p-3 font-medium max-w-xs truncate">{r.adTitle}</td>
+
+                <td className="p-3 capitalize">{r.priority}</td>
+
+                <td className="p-3">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[r.status] ?? ""}`}>
+                    {r.status}
+                  </span>
                 </td>
 
                 <td className="p-3">
-                  {p.category}
-                </td>
-
-                <td className="p-3 text-center font-semibold text-red-600">
-                  {p.reportCount}
-                </td>
-
-                <td className="p-3 max-w-xs truncate">
-                  {p.latestReport?.reason || "—"}
+                  {r.createdAt ? new Date(r.createdAt).toLocaleString("en-GB") : "—"}
                 </td>
 
                 <td className="p-3">
-                  {p.latestReport?.at
-                    ? new Date(p.latestReport.at).toLocaleString("en-GB")
-                    : "—"}
+                  <ViewReportModal report={r} />
                 </td>
 
-                <td className="p-3">
-                  <ViewReportsModal reports={p.reports} />
-                </td>
-
-                <td className="p-3 text-right space-x-2">
-
-                  <Link
-                    href={`/bo/posts/${p.id}`}
-                    className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
-                  >
-                    View Details
-                  </Link>
-
-                  <ClearPostReportButton postId={p.id} />
-
+                <td className="p-3 text-right space-y-2">
+                  <div>
+                    {r.postId ? (
+                      <Link
+                        href={`/bo/posts/${r.postId}`}
+                        className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        View Ad
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Ad not found</span>
+                    )}
+                  </div>
+                  <ReviewReportButtons reportId={r.id} status={r.status} />
                 </td>
 
               </tr>
-
             ))}
 
-            {sortedPosts.length === 0 && (
+            {rows.length === 0 && (
               <tr>
                 <td colSpan={7} className="p-6 text-center text-muted-foreground">
-                  No reported posts 🎉
+                  No ad reports 🎉
                 </td>
               </tr>
             )}
