@@ -33,6 +33,9 @@ export default async function AdminLayout({
             <Link href="/bo/posts" className="text-blue-600 underline">
               Ads
             </Link>
+            <Link href="/bo/dev-tools" className="text-blue-600 underline">
+              Dev Tools
+            </Link>
 
             {/* Profile dropdown */}
             <AdminHeader
