@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
+import dbConnect from "@/lib/db";
 import User from "@/models/user";
 import { compare } from "bcryptjs";
 import jwt from "jsonwebtoken";

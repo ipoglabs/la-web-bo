@@ -1,7 +1,7 @@
 // src/app/actions/property/addPropertyPost.ts
 'use server';
 
-import connectDB from '../../../config/database';
+import connectDB from '../../../lib/db';
 import Post from '../../../models/post';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';

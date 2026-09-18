@@ -1,7 +1,7 @@
 // src/app/actions/addPost.ts
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import cloudinary from "@/config/cloudinary";
 import { cookies } from "next/headers";

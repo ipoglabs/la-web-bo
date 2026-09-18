@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import AdReport from "@/models/adReport";
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 import { Types } from "mongoose";

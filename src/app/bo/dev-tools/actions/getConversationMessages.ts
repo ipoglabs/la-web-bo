@@ -1,7 +1,7 @@
 "use server";
 
 import { Types } from "mongoose";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import DevToolsMessage from "@/models/devtools/DevToolsMessage";
 import DevToolsConversation from "@/models/devtools/DevToolsConversation";
 import type { DevToolsConversationDetail } from "./types";

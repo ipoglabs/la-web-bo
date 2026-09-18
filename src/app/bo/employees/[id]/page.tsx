@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { redirect, notFound } from "next/navigation"
-import connectDB from "@/config/database"
+import connectDB from "@/lib/db"
 import AdminUser from "@/models/adminUser"
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 import Link from "next/link"

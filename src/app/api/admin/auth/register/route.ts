@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
+import dbConnect from "@/lib/db";
 import AdminUser from "@/models/adminUser";
 import Counter from "@/models/counter"; // ✅ using your existing file
 import { hash } from "bcryptjs";

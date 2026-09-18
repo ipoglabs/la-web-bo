@@ -1,4 +1,4 @@
-import connectDB from "@/config/database"
+import connectDB from "@/lib/db"
 import Post from "@/models/post"
 import User from "@/models/user"
 import AdReport from "@/models/adReport"

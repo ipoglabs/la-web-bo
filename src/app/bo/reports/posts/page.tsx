@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import connectDB from "@/config/database"
+import connectDB from "@/lib/db"
 import AdReport from "@/models/adReport"
 import Post from "@/models/post"
 import ViewReportModal from "./ViewReportModal"

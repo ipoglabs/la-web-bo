@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 import { Types } from "mongoose";
@@ -37,6 +37,7 @@ export async function suspendUser(userId: string, suspend: boolean) {
     user.audit.push({
       action: suspend ? "suspend" : "activate",
       by: adminId,
+      byModel: "AdminUser",
       at: new Date(),
     });
 

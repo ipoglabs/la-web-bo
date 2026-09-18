@@ -1,7 +1,7 @@
 "use server";
 
 import { Types } from "mongoose";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import DevToolsPost from "@/models/devtools/DevToolsPost";
 import DevToolsConversation from "@/models/devtools/DevToolsConversation";
 import type { DevToolsDeletedUserData } from "./types";

@@ -1,4 +1,4 @@
-import connectDB from "@/config/database"
+import connectDB from "@/lib/db"
 import "@/models/user"
 import Post from "@/models/post"
 import { toClientPost } from "@/lib/serialize"

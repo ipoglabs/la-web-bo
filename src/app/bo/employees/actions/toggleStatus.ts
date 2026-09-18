@@ -1,7 +1,7 @@
 "use server"
 
 import { cookies } from "next/headers"
-import connectDB from "@/config/database"
+import connectDB from "@/lib/db"
 import AdminUser from "@/models/adminUser"
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 import { Types } from "mongoose"
@@ -21,12 +21,28 @@ export async function toggleEmployeeStatus(employeeId: string) {
       return { ok: false, error: "Invalid employee id" }
     }
 
+    if (session.adminId === employeeId) {
+      return { ok: false, error: "You cannot change your own status" }
+    }
+
     await connectDB()
 
     const employee = await AdminUser.findById(employeeId)
     if (!employee) return { ok: false, error: "Employee not found" }
 
     const prev = employee.isActive
+
+    if (prev && employee.role === "super_admin") {
+      const otherActiveSuperAdmins = await AdminUser.countDocuments({
+        _id: { $ne: employee._id },
+        role: "super_admin",
+        isActive: true,
+      })
+      if (otherActiveSuperAdmins === 0) {
+        return { ok: false, error: "Cannot deactivate the last active super admin" }
+      }
+    }
+
     employee.isActive = !prev
 
     employee.audit.push({

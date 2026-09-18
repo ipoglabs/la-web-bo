@@ -1,6 +1,6 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import DevToolsUser from "@/models/devtools/DevToolsUser";
 import type { DevToolsUser as DevToolsUserDTO } from "./types";
 

@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { Types } from "mongoose";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 

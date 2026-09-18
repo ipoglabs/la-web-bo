@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/lib/auth";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import mongoose from "mongoose";
 

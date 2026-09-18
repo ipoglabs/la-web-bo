@@ -1,5 +1,5 @@
 // src/app/bo/users/page.tsx (SERVER)
-import connectDB from "@/config/database"
+import connectDB from "@/lib/db"
 import User from "@/models/user"
 import BoUsersClient from "./BoUsersClient"
 

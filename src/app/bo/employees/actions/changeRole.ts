@@ -1,7 +1,7 @@
 "use server"
 
 import { cookies } from "next/headers"
-import connectDB from "@/config/database"
+import connectDB from "@/lib/db"
 import AdminUser from "@/models/adminUser"
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 import { Types } from "mongoose"
@@ -30,10 +30,18 @@ export async function changeEmployeeRole(
       return { ok: false, error: "Invalid employee id" }
     }
 
+    if (session.adminId === employeeId) {
+      return { ok: false, error: "You cannot change your own role" }
+    }
+
     await connectDB()
 
     const employee = await AdminUser.findById(employeeId)
     if (!employee) return { ok: false, error: "Employee not found" }
+
+    if (employee.role === "super_admin") {
+      return { ok: false, error: "Cannot change another super admin's role" }
+    }
 
     const prevRole = employee.role
 

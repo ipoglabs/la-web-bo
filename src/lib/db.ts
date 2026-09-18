@@ -17,7 +17,10 @@ export default async function connectDB() {
   if (!g._mongoose!.promise) {
     g._mongoose!.promise = mongoose
       .connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || undefined })
-      .then((m) => m);
+      .catch((err) => {
+        g._mongoose!.promise = null;
+        throw err;
+      });
   }
   g._mongoose!.conn = await g._mongoose!.promise;
   return g._mongoose!.conn;

@@ -40,7 +40,11 @@ const AuditSchema = new mongoose.Schema(
     action: { type: String },
     IPAddress: { type: String, trim: true },
     Device: { type: String, trim: true },
-    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    // `by` is the user themselves for self-service actions (login, profile
+    // edits) but an AdminUser for bo-driven actions (suspend/activate) —
+    // byModel lets populate() resolve against the right collection either way.
+    byModel: { type: String, enum: ["User", "AdminUser"], default: "User" },
+    by: { type: mongoose.Schema.Types.ObjectId, refPath: "byModel" },
     at: { type: Date, default: Date.now },
   },
   { _id: false }
