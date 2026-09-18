@@ -5,6 +5,20 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+interface RegisterForm {
+  firstName: string;
+  lastName: string;
+  designation: string;
+  age: string;
+  gender: string;
+  country: string;
+  location: string;
+  role: string;
+  employeeId: string;
+  email: string;
+  password: string;
+}
+
 export default function AdminRegisterPage() {
   const router = useRouter();
 
@@ -14,7 +28,7 @@ export default function AdminRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const [form, setForm] = useState<any>({
+  const [form, setForm] = useState<RegisterForm>({
     firstName: "",
     lastName: "",
     designation: "",
@@ -61,8 +75,8 @@ export default function AdminRegisterPage() {
     );
   }
 
-  const update = (k: string, v: any) =>
-    setForm((s: any) => ({ ...s, [k]: v }));
+  const update = <K extends keyof RegisterForm>(k: K, v: RegisterForm[K]) =>
+    setForm((s) => ({ ...s, [k]: v }));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

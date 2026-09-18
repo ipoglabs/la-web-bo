@@ -25,7 +25,7 @@ export function FormField<TFieldValues extends FieldValues = FieldValues>({
 }: {
   name: Path<TFieldValues>;
   control: UseFormReturn<TFieldValues>["control"];
-  render: (props: any) => React.ReactElement;
+  render: React.ComponentProps<typeof Controller<TFieldValues>>["render"];
 }) {
   return (
     <Controller<TFieldValues>

@@ -12,12 +12,12 @@ export default async function BoUsersPage() {
     .lean()
 
   // 🚨 serialize for client
-  const data = users.map((u: any) => ({
+  const data = users.map((u) => ({
     id: u._id.toString(),
     fullName: u.fullName,
-    email: u.email,
+    email: u.email ?? "",
     publicRole: u.publicRole,
-    createdAt: u.createdAt.toISOString(),
+    createdAt: (u.createdAt ?? new Date(0)).toISOString(),
   }))
 
   return <BoUsersClient data={data} />

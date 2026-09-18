@@ -5,6 +5,19 @@ import Counter from "@/models/counter"; // ✅ using your existing file
 import { hash } from "bcryptjs";
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 
+interface RegisterBody {
+  email?: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  designation?: string;
+  age?: number;
+  gender?: string;
+  country?: string;
+  location?: string;
+  role?: string;
+}
+
 function canCreateRole(creatorRole: string, targetRole: string) {
   if (creatorRole === "super_admin") {
     return ["admin", "moderator", "support", "analyst"].includes(targetRole);
@@ -50,12 +63,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json().catch(() => ({} as any));
+    const body: RegisterBody = await req.json().catch(() => ({}));
 
     const email = String(body?.email ?? "").toLowerCase().trim();
     const password = String(body?.password ?? "");
 
-    const payload: any = {
+    const payload = {
       firstName: String(body?.firstName ?? "").trim(),
       lastName: String(body?.lastName ?? "").trim(),
       designation: String(body?.designation ?? "").trim(),
@@ -105,10 +118,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true }, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json(
-      { ok: false, error: e?.message || "Register failed" },
-      { status: 500 }
-    );
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Register failed";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

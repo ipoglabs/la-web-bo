@@ -11,12 +11,20 @@ import mongoose from "mongoose";
 type LocationData = { address?: string; lat?: number; lng?: number };
 
 // --- helpers -------------------------------------------------
-function safeParse<T = any>(val: string, fallback: T): T {
+function safeParse<T = unknown>(val: string, fallback: T): T {
   try {
     return JSON.parse(val) as T;
   } catch {
     return fallback;
   }
+}
+function extractString(decoded: unknown, ...keys: string[]): string | undefined {
+  if (!decoded || typeof decoded !== "object") return undefined;
+  const d = decoded as Record<string, unknown>;
+  for (const key of keys) {
+    if (typeof d[key] === "string") return d[key] as string;
+  }
+  return undefined;
 }
 const pullString = (v: FormDataEntryValue | null | undefined) => {
   const s = (v as string | null) ?? "";
@@ -32,7 +40,7 @@ const pullNumber = (v: FormDataEntryValue | null | undefined) => {
 const pullArray = (v: FormDataEntryValue | null | undefined) => {
   const s = pullString(v);
   if (!s) return [];
-  const parsed = safeParse<any>(s, []);
+  const parsed = safeParse<unknown>(s, []);
   if (Array.isArray(parsed)) return parsed;
   return String(s)
     .split(",")
@@ -66,15 +74,20 @@ export async function addPost(
     const decoded = raw ? verifyToken(raw) : null;
 
     // ownerId: only if JWT has a *string* id and it is a valid ObjectId
-    const ownerId = validObjectIdFrom((decoded as any)?.id || (decoded as any)?.userId);
+    const ownerId = validObjectIdFrom(
+      extractString(decoded, "id", "userId")
+    );
 
     // ownerEmail fallback (normalized)
+    const sub = extractString(decoded, "sub");
     const ownerEmail =
-      normalizeEmail((decoded as any)?.email) ||
-      normalizeEmail((decoded as any)?.user?.email) ||
-      (typeof (decoded as any)?.sub === "string" && (decoded as any).sub.includes("@")
-        ? normalizeEmail((decoded as any).sub)
-        : undefined);
+      normalizeEmail(extractString(decoded, "email")) ||
+      normalizeEmail(
+        decoded && typeof decoded === "object"
+          ? extractString((decoded as Record<string, unknown>).user, "email")
+          : undefined
+      ) ||
+      (sub?.includes("@") ? normalizeEmail(sub) : undefined);
 
     // --- Core fields ---
     const name =
@@ -138,7 +151,7 @@ export async function addPost(
     const amenities = pullArray(formData.get("amenities"));
 
     // ===== Build postData =====
-    const postData: Record<string, any> = {
+    const postData: Record<string, unknown> = {
       ownerId, // attach owner if present
       category,
       subcategory,
@@ -301,13 +314,13 @@ export async function addPost(
 
     // --- Required checks ---
     const errors: string[] = [];
-    if (!postData.name) errors.push("Title is required");
-    if (!postData.description) errors.push("Description is required");
-    if (!postData.category) errors.push("Category is required");
-    if (!postData.subcategory) errors.push("Subcategory is required");
-    if (!postData.seller_info?.name) errors.push("Contact name is required");
-    if (!postData.seller_info?.email) errors.push("Contact email is required");
-    if (!postData.seller_info?.phone) errors.push("Contact phone is required");
+    if (!name) errors.push("Title is required");
+    if (!description) errors.push("Description is required");
+    if (!category) errors.push("Category is required");
+    if (!subcategory) errors.push("Subcategory is required");
+    if (!seller_info.name) errors.push("Contact name is required");
+    if (!seller_info.email) errors.push("Contact email is required");
+    if (!seller_info.phone) errors.push("Contact phone is required");
 
     if (errors.length) {
       console.error("Validation errors:", errors, { postData });
@@ -318,8 +331,8 @@ export async function addPost(
     await newPost.save();
 
     return { ok: true, id: String(newPost._id) };
-  } catch (e: any) {
+  } catch (e) {
     console.error("addPost fatal error:", e);
-    return { ok: false, error: e?.message || "Unknown server error in addPost" };
+    return { ok: false, error: e instanceof Error ? e.message : "Unknown server error in addPost" };
   }
 }

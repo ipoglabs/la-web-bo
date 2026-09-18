@@ -23,8 +23,8 @@ export default function AdminUserActions({
   const [pending, start] = useTransition();
   const router = useRouter();
 
-  const canSuspend = CAN_SUSPEND.includes(viewerRole as any);
-  const canDelete = CAN_DELETE.includes(viewerRole as any);
+  const canSuspend = (CAN_SUSPEND as readonly string[]).includes(viewerRole);
+  const canDelete = (CAN_DELETE as readonly string[]).includes(viewerRole);
 
   const [localSuspended, setLocalSuspended] = useState(isSuspended);
 

@@ -119,7 +119,7 @@ export default async function BoPostDetailsPage({
             <p className="text-sm text-muted-foreground">No reports for this ad.</p>
           )}
 
-          {reports.map((r: any) => (
+          {reports.map((r) => (
             <div key={r._id.toString()} className="border rounded-lg p-3 text-sm space-y-1">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-muted-foreground">{r.ticketId}</span>

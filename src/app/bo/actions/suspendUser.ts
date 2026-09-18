@@ -29,7 +29,7 @@ export async function suspendUser(userId: string, suspend: boolean) {
     const adminId =
       session.adminId && Types.ObjectId.isValid(session.adminId)
         ? new Types.ObjectId(session.adminId)
-        : null;
+        : undefined;
 
     user.isSuspended = suspend;
     user.accountStatus = suspend ? "Suspended" : "Active";

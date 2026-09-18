@@ -40,7 +40,7 @@ export async function updateProfile(
   const payload: UpdatePayload = {
     fullName: (form.get("fullName") as string) || undefined,
     dateOfBirth: (form.get("dateOfBirth") as string) || undefined,
-    gender: (form.get("gender") as any) || undefined,
+    gender: (form.get("gender") as UpdatePayload["gender"]) || undefined,
     nationality: (form.get("nationality") as string) || undefined,
     residency: (form.get("residency") as string) || undefined,
     primaryNumber: (form.get("primaryNumber") as string) || undefined,
@@ -62,7 +62,7 @@ export async function updateProfile(
   }
 
   // Build update object
-  const $set: Record<string, any> = {};
+  const $set: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(payload)) {
     if (v !== undefined && v !== null && String(v).length > 0) $set[k] = v;
   }
@@ -72,11 +72,12 @@ export async function updateProfile(
   try {
     await User.updateOne({ _id: id }, { $set });
     return { ok: true };
-  } catch (e: any) {
-    if (e?.code === 11000) {
-      const key = Object.keys(e.keyPattern || {})[0] || "field";
+  } catch (e) {
+    const mongoErr = e as { code?: number; keyPattern?: Record<string, unknown> };
+    if (mongoErr?.code === 11000) {
+      const key = Object.keys(mongoErr.keyPattern || {})[0] || "field";
       return { ok: false, error: `That ${key} is already in use.` };
     }
-    return { ok: false, error: e?.message || "Failed to update profile" };
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to update profile" };
   }
 }

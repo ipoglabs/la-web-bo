@@ -8,14 +8,9 @@ import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 
 const ALLOWED = ["super_admin"]; // FIXED
 
-function getActorObjectId(session: any): Types.ObjectId | undefined {
-
-  const candidates = [
-    session?.adminId,
-    session?.id,
-    session?._id,
-    session?.sub,
-  ];
+function getActorObjectId(session: unknown): Types.ObjectId | undefined {
+  const s = (session ?? {}) as Record<string, unknown>;
+  const candidates = [s.adminId, s.id, s._id, s.sub];
 
   for (const value of candidates) {
     if (typeof value === "string" && Types.ObjectId.isValid(value)) {
@@ -71,11 +66,11 @@ export async function deleteUser(userId: string) {
 
     return { ok: true };
 
-  } catch (e: any) {
+  } catch (e) {
 
     console.error("deleteUser failed:", e);
 
-    return { ok: false, error: e?.message || "Delete failed" };
+    return { ok: false, error: e instanceof Error ? e.message : "Delete failed" };
 
   }
 

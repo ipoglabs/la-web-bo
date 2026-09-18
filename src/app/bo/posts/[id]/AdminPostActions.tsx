@@ -8,6 +8,8 @@ import { suspendPost } from "../../actions/suspendPost"
 
 const ALLOWED = ["super_admin", "admin", "moderator"]
 
+type ActionResult = { ok: boolean; error?: string }
+
 export default function AdminPostActions({
   postId,
   status,
@@ -25,7 +27,7 @@ export default function AdminPostActions({
 
   if (!role || !ALLOWED.includes(role)) return null
 
-  const act = (fn: () => Promise<any>) =>
+  const act = (fn: () => Promise<ActionResult>) =>
     start(async () => {
       const res = await fn()
       if (!res?.ok) {

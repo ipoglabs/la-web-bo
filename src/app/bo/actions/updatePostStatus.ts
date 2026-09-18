@@ -49,8 +49,8 @@ export async function updatePostStatus(
     }
 
     return { ok: true };
-  } catch (e: any) {
+  } catch (e) {
     console.error("updatePostStatus error:", e);
-    return { ok: false, error: e?.message || "Update failed" };
+    return { ok: false, error: e instanceof Error ? e.message : "Update failed" };
   }
 }

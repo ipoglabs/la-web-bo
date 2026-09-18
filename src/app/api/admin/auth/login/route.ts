@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import AdminUser from "@/models/adminUser";
+import AdminUser, { type IAdminUser } from "@/models/adminUser";
 import { compare } from "bcryptjs";
+import type { Types } from "mongoose";
 import {
   ADMIN_COOKIE,
   ADMIN_MAX_AGE,
@@ -9,11 +10,16 @@ import {
   isAdminRole,
 } from "@/lib/adminAuth";
 
+interface LoginBody {
+  employeeId?: string;
+  password?: string;
+}
+
 export async function POST(req: Request) {
   try {
     await dbConnect();
 
-    const body = await req.json().catch(() => ({} as any));
+    const body: LoginBody = await req.json().catch(() => ({}));
     const employeeId = String(body?.employeeId ?? "").trim();
     const password = String(body?.password ?? "");
 
@@ -24,9 +30,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const admin: any = await AdminUser.findOne({ employeeId })
+    const admin = await AdminUser.findOne({ employeeId })
       .select("+password")
-      .lean();
+      .lean<(IAdminUser & { _id: Types.ObjectId }) | null>();
 
     if (!admin) {
       return NextResponse.json(

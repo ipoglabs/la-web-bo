@@ -79,7 +79,11 @@ export default async function BoEmployeeDetails({
           <Info label="Location" value={employee.location} />
           <Info
             label="Joined"
-            value={new Date(employee.createdAt).toLocaleDateString("en-GB")}
+            value={
+              employee.createdAt
+                ? new Date(employee.createdAt).toLocaleDateString("en-GB")
+                : "-"
+            }
           />
         </div>
       </div>

@@ -2,9 +2,9 @@
 "use client"
 
 import { DataTable } from "../components/data-table"
-import { columns } from "./columns"
+import { columns, type BoUser } from "./columns"
 
-export default function BoUsersClient({ data }: { data: any[] }) {
+export default function BoUsersClient({ data }: { data: BoUser[] }) {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Users</h1>

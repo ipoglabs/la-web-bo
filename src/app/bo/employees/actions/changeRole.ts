@@ -2,18 +2,22 @@
 
 import { cookies } from "next/headers"
 import connectDB from "@/lib/db"
-import AdminUser from "@/models/adminUser"
+import AdminUser, { type AdminRole } from "@/models/adminUser"
 import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 import { Types } from "mongoose"
 
-const ALLOWED_ROLES = ["admin", "moderator", "support", "analyst"]
+const ALLOWED_ROLES = ["admin", "moderator", "support", "analyst"] as const
+
+function isAllowedRole(role: string): role is Exclude<AdminRole, "super_admin"> {
+  return (ALLOWED_ROLES as readonly string[]).includes(role)
+}
 
 export async function changeEmployeeRole(
   employeeId: string,
   nextRole: string
 ) {
   try {
-    if (!ALLOWED_ROLES.includes(nextRole)) {
+    if (!isAllowedRole(nextRole)) {
       return { ok: false, error: "Invalid role" }
     }
 
@@ -50,18 +54,17 @@ export async function changeEmployeeRole(
     }
 
     employee.role = nextRole
-employee.audit.push({
-  action: "role_change",
-  from: prevRole,
-  to: nextRole,
-  by: session.adminId, // ✅ correct field
-})
+    employee.audit.push({
+      action: "role_change",
+      from: prevRole,
+      to: nextRole,
+      by: new Types.ObjectId(session.adminId),
+    })
 
-await employee.save()
-
+    await employee.save()
 
     return { ok: true }
-  } catch (e: any) {
-    return { ok: false, error: e.message }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Role change failed" }
   }
 }

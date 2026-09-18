@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { type Model } from "mongoose";
 import { randomUUID } from "crypto";
 
 /**
@@ -50,11 +50,110 @@ const AuditSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const UserSchema = new mongoose.Schema(
+export interface IAddress {
+  country?: string;
+  state?: string;
+  city?: string;
+  postalCode?: string;
+}
+
+export interface ISavedLocation {
+  flagCode: string;
+  city: string;
+  region?: string;
+  country: string;
+  primary?: boolean;
+}
+
+export interface IRecentSearch {
+  keyword?: string;
+  scopeCat?: string;
+  scopeLabel?: string;
+  scopeSub?: string;
+  scopeSubLabel?: string;
+  searchedAt?: Date;
+}
+
+export interface IUserAudit {
+  action?: string;
+  IPAddress?: string;
+  Device?: string;
+  byModel?: "User" | "AdminUser";
+  by?: mongoose.Types.ObjectId;
+  at?: Date;
+}
+
+export interface IUser {
+  uuid: string;
+  userId: string;
+
+  fullName: string;
+  dateOfBirth: Date;
+  gender?: string;
+
+  nationality?: string;
+  residency?: string;
+
+  locality?: string;
+  address?: IAddress;
+  savedLocations: ISavedLocation[];
+  recentSearches: IRecentSearch[];
+
+  email?: string;
+  isEmailVerified: boolean;
+  appleEmailId?: string;
+
+  primaryNumber?: string;
+  isPrimaryNumberVerified: boolean;
+
+  secondaryNumber1?: string;
+  secondaryNumber2?: string;
+
+  password?: string;
+
+  publicRole: string;
+  roleTitle?: string;
+  roleDescription?: string;
+  roles: string[];
+  roleSpecialties?: Record<string, unknown>;
+  customRole?: string;
+
+  intent: "buying" | "selling" | "both" | "browsing";
+  provider: "credentials" | "google" | "apple";
+  accountStatus: "Pending" | "Active" | "Suspended" | "Deleted";
+
+  isNewUser: boolean;
+  isTermsAndConditionAccepted: boolean;
+  isPrivacyAndPolicyAccepted: boolean;
+  isCookiesPolicyAccepted: boolean;
+  marketingOptIn: boolean;
+
+  isSuspended: boolean;
+  audit: IUserAudit[];
+
+  isDeleted: boolean;
+  deletedAt?: Date;
+  deleteFeedback?: string;
+  deletedIdentitySnapshot?: {
+    email?: string;
+    primaryNumber?: string;
+    fullName?: string;
+  };
+
+  lastLoginAt?: Date;
+  dormantNudgedAt?: Date;
+  isFullyRegistered: boolean;
+  image?: string;
+
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const UserSchema = new mongoose.Schema<IUser>(
   {
     // Never selected by default — only dev-tools-style admin lookups opt in
     // with `.select("+uuid")`.
-    uuid: { type: String, required: true, unique: true, default: randomUUID, select: false },
+    uuid: { type: String, required: true, unique: true, default: () => randomUUID(), select: false },
 
     userId: { type: String, required: true, unique: true },
 
@@ -169,7 +268,15 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-UserSchema.pre("validate", function (this: any) {
+interface RegistrationFields {
+  email?: string;
+  primaryNumber?: string;
+  dateOfBirth?: Date;
+  locality?: string;
+  isFullyRegistered?: boolean;
+}
+
+UserSchema.pre("validate", function (this: mongoose.Document & RegistrationFields) {
   if (!this.email && !this.primaryNumber) {
     throw new Error("At least one of email or primaryNumber is required.");
   }
@@ -179,4 +286,5 @@ UserSchema.pre("validate", function (this: any) {
   );
 });
 
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+export default (mongoose.models.User as Model<IUser>) ||
+  mongoose.model<IUser>("User", UserSchema);

@@ -1,7 +1,8 @@
 // middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtVerify, type JWTPayload } from "jose";
+import type { AdminSession } from "@/lib/adminAuth";
 
 const ADMIN_COOKIE = "admin_session";
 
@@ -9,13 +10,13 @@ function isAdminRole(role?: string) {
   return ["super_admin", "admin", "moderator", "support", "analyst"].includes(String(role || ""));
 }
 
-async function verifyEdgeJwt(token: string) {
+async function verifyEdgeJwt(token: string): Promise<(JWTPayload & Partial<AdminSession>) | null> {
   const secret = process.env.JWT_SECRET;
   if (!secret) return null;
 
   try {
     const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    return payload as any; // { adminId, email, role, country }
+    return payload as JWTPayload & Partial<AdminSession>;
   } catch {
     return null;
   }

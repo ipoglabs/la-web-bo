@@ -5,27 +5,29 @@ import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { verifyToken } from "@/lib/auth";
 
-function extractEmailFromDecoded(decoded: any): string | undefined {
+// Accepts unknown because it's defensively handling both our own
+// SessionPayload shape and older/legacy token shapes (sub, nested user.*).
+function extractEmailFromDecoded(decoded: unknown): string | undefined {
   if (!decoded || typeof decoded !== "object") return undefined;
-  return (
-    decoded.email ||
-    decoded.user?.email ||
-    (typeof decoded.sub === "string" && decoded.sub.includes("@")
-      ? decoded.sub
-      : undefined)
-  );
+  const d = decoded as Record<string, unknown>;
+  const user = d.user as Record<string, unknown> | undefined;
+
+  if (typeof d.email === "string") return d.email;
+  if (typeof user?.email === "string") return user.email;
+  if (typeof d.sub === "string" && d.sub.includes("@")) return d.sub;
+  return undefined;
 }
 
-function extractUserIdFromDecoded(decoded: any): string | undefined {
+function extractUserIdFromDecoded(decoded: unknown): string | undefined {
   if (!decoded || typeof decoded !== "object") return undefined;
-  return (
-    decoded.id ||
-    decoded.userId ||
-    decoded.user?.id ||
-    (typeof decoded.sub === "string" && !decoded.sub.includes("@")
-      ? decoded.sub
-      : undefined)
-  );
+  const d = decoded as Record<string, unknown>;
+  const user = d.user as Record<string, unknown> | undefined;
+
+  if (typeof d.id === "string") return d.id;
+  if (typeof d.userId === "string") return d.userId;
+  if (typeof user?.id === "string") return user.id;
+  if (typeof d.sub === "string" && !d.sub.includes("@")) return d.sub;
+  return undefined;
 }
 
 export async function bumpPost(postId: string) {
@@ -77,7 +79,7 @@ export async function bumpPost(postId: string) {
       ok: true as const,
       lastBumpedAt: post.lastBumpedAt.toISOString(),
     };
-  } catch (e: any) {
-    return { ok: false as const, error: e?.message || "Bump failed" };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "Bump failed" };
   }
 }

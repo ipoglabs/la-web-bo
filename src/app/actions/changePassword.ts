@@ -27,6 +27,7 @@ if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
 
   const user = await User.findById(userId);
   if (!user) return { ok: false, error: "User not found" };
+  if (!user.password) return { ok: false, error: "This account has no password set" };
 
   const ok = await bcrypt.compare(currentPassword, user.password);
   if (!ok) return { ok: false, error: "Current password is incorrect" };

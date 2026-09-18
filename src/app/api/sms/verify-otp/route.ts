@@ -9,7 +9,7 @@ const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
 export async function POST(req: Request) {
-  const { phone, otp } = await req.json().catch(() => ({} as any));
+  const { phone, otp } = await req.json().catch(() => ({} as { phone?: string; otp?: string }));
   if (!phone || !otp) {
     return NextResponse.json(
       { error: 'Phone and OTP required', code: 'MISSING' },
@@ -100,11 +100,12 @@ export async function POST(req: Request) {
       },
       { status: 400 }
     );
-  } catch (err: any) {
+  } catch (err) {
     console.error('Verify check error:', err);
 
     // Attempt to classify some common Twilio verify errors
-    const raw = String(err?.message || '').toLowerCase();
+    const message = err instanceof Error ? err.message : '';
+    const raw = message.toLowerCase();
 
     if (raw.includes('max check attempts reached')) {
       // Provider-side throttle — treat as locked
@@ -141,7 +142,7 @@ export async function POST(req: Request) {
 
     // Fallback
     return NextResponse.json(
-      { error: err?.message ?? 'Verification failed' },
+      { error: message || 'Verification failed' },
       { status: 500 }
     );
   }

@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { updatePostStatus } from "../../actions/updatePostStatus"
 
-export default function AdminUserAdCard({ post }: { post: any }) {
+type PostSummary = {
+  id: string
+  name: string
+  category: string
+  status?: "active" | "off" | "expired" | "pending" | "rejected" | "closed" | "deleted"
+}
+
+export default function AdminUserAdCard({ post }: { post: PostSummary }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [status, setStatus] = useState(post.status)

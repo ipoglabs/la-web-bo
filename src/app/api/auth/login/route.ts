@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import User from "@/models/user";
+import User, { type IUser } from "@/models/user";
 import { compare } from "bcryptjs";
 import jwt from "jsonwebtoken";
+import type { Types } from "mongoose";
 
 const COOKIE_NAME = "session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+
+interface LoginBody {
+  identifier?: string;
+  password?: string;
+}
 
 function signJwt(payload: object) {
   if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not set");
@@ -16,7 +22,7 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
 
-    const body = await req.json().catch(() => ({} as any));
+    const body: LoginBody = await req.json().catch(() => ({}));
     const rawIdentifier = String(body?.identifier ?? "").trim();
     const password = String(body?.password ?? "");
 
@@ -34,7 +40,7 @@ export async function POST(req: Request) {
     const query = isEmailId ? { email: emailRaw } : { primaryNumber: phoneRaw };
 
     // IMPORTANT: include password in projection
-    const user = await User.findOne(query).lean();
+    const user = await User.findOne(query).lean<(IUser & { _id: Types.ObjectId }) | null>();
     if (!user) {
       return NextResponse.json(
         { error: "Account not found with that email / phone." },
@@ -42,12 +48,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const ok = await compare(password, (user as any).password);
+    const ok = await compare(password, user.password ?? "");
     if (!ok) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
     }
 
-    if (!(user as any).isEmailVerified) {
+    if (!user.isEmailVerified) {
       return NextResponse.json(
         { error: "Please verify your email before logging in." },
         { status: 403 }
@@ -55,22 +61,22 @@ export async function POST(req: Request) {
     }
 
     const token = signJwt({
-      userId: String((user as any)._id),
-      email: (user as any).email,
-      primaryNumber: (user as any).primaryNumber,
-      publicRole: (user as any).publicRole ?? "user",
+      userId: String(user._id),
+      email: user.email,
+      primaryNumber: user.primaryNumber,
+      publicRole: user.publicRole ?? "user",
     });
 
     const res = NextResponse.json(
       {
         message: "Login successful",
         user: {
-          id: String((user as any)._id),
-          email: (user as any).email,
-          fullName: (user as any).fullName,
-          publicRole: (user as any).publicRole ?? "user",
-          primaryNumber: (user as any).primaryNumber,
-          locality: (user as any).locality,
+          id: String(user._id),
+          email: user.email,
+          fullName: user.fullName,
+          publicRole: user.publicRole ?? "user",
+          primaryNumber: user.primaryNumber,
+          locality: user.locality,
         },
         token,
       },
@@ -88,8 +94,8 @@ export async function POST(req: Request) {
     res.cookies.set(
       "uinfo",
       JSON.stringify({
-        id: String((user as any)._id),
-        ph: (user as any).primaryNumber,
+        id: String(user._id),
+        ph: user.primaryNumber,
       }),
       {
         httpOnly: false,

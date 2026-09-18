@@ -46,17 +46,16 @@ export async function toggleEmployeeStatus(employeeId: string) {
     employee.isActive = !prev
 
     employee.audit.push({
-  action: "status_change",
-  from: String(prev),
-  to: String(!prev),
-  by: session.adminId, 
-})
+      action: "status_change",
+      from: String(prev),
+      to: String(!prev),
+      by: new Types.ObjectId(session.adminId),
+    })
 
-await employee.save()
-
+    await employee.save()
 
     return { ok: true }
-  } catch (e: any) {
-    return { ok: false, error: e.message }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Status change failed" }
   }
 }

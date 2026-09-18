@@ -40,15 +40,15 @@ export default async function BoEmployeesPage() {
           </thead>
 
           <tbody>
-            {employees.map((e: any) => (
-              <tr key={e._id} className="border-b hover:bg-muted/40">
+            {employees.map((e) => (
+              <tr key={String(e._id)} className="border-b hover:bg-muted/40">
                 <td className="p-3 font-medium">
                   {e.firstName} {e.lastName}
                 </td>
                 <td className="p-3">{e.email}</td>
                 <td className="p-3 capitalize">{e.role}</td>
                 <td className="p-3">
-                  {new Date(e.createdAt).toLocaleDateString("en-GB")}
+                  {e.createdAt ? new Date(e.createdAt).toLocaleDateString("en-GB") : "-"}
                 </td>
                 <td className="p-3 text-right">
                   {session.role === "super_admin" && (

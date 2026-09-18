@@ -1,8 +1,8 @@
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
-import User from "@/models/user";
+import User, { type IUser } from "@/models/user";
 import { notFound, redirect } from "next/navigation";
-import { toClientPost } from "@/lib/serialize";
+import { toClientPost, type LeanPost } from "@/lib/serialize";
 import AdminUserAdCard from "./AdminUserAdCard";
 import AdminUserActions from "./AdminUserActions";
 import { Types } from "mongoose";
@@ -43,6 +43,11 @@ export default async function BoUserAds({
 
   await connectDB();
 
+  type UserSummary = Pick<
+    IUser,
+    "fullName" | "email" | "image" | "isEmailVerified" | "isPrimaryNumberVerified" | "accountStatus" | "isSuspended"
+  > & { _id: Types.ObjectId };
+
   const user = await User.findById(id)
     .select([
       "fullName",
@@ -53,14 +58,14 @@ export default async function BoUserAds({
       "accountStatus",
       "isSuspended",
     ])
-    .lean<any>();
+    .lean<UserSummary | null>();
 
   if (!user) return notFound();
 
   const isSuspended =
     !!user.isSuspended || user.accountStatus === "Suspended";
 
-  const or: any[] = [{ ownerId: new Types.ObjectId(id) }];
+  const or: Record<string, unknown>[] = [{ ownerId: new Types.ObjectId(id) }];
 
   if (user.email) {
     or.push({
@@ -71,8 +76,8 @@ export default async function BoUserAds({
     });
   }
 
-  const posts = await Post.find({ $or: or }).sort({ updatedAt: -1 }).lean();
-  const safePosts = posts.map((p: any) => toClientPost(p));
+  const posts = await Post.find({ $or: or }).sort({ updatedAt: -1 }).lean<LeanPost[]>();
+  const safePosts = posts.flatMap((p) => toClientPost(p) ?? []);
 
   return (
     <div className="space-y-6">
@@ -136,7 +141,7 @@ export default async function BoUserAds({
           <div className="text-sm text-slate-500">No ads found for this user.</div>
         ) : (
           <div className="space-y-3">
-            {safePosts.map((p: any) => (
+            {safePosts.map((p) => (
               <AdminUserAdCard key={p.id} post={p} />
             ))}
           </div>

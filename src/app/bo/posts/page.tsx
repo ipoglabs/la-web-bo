@@ -1,9 +1,15 @@
 import connectDB from "@/lib/db"
 import "@/models/user"
 import Post from "@/models/post"
-import { toClientPost } from "@/lib/serialize"
+import { toClientPost, type LeanPost } from "@/lib/serialize"
 import { BoPost } from "./columns"
 import BoPostsClient from "./BoPostsClient"
+import type { Types } from "mongoose"
+
+type PopulatedOwner = { _id: Types.ObjectId; email?: string };
+type LeanPostWithOwner = Omit<LeanPost, "ownerId"> & {
+  ownerId?: Types.ObjectId | PopulatedOwner;
+};
 
 export default async function BoPostsPage() {
   await connectDB()
@@ -11,22 +17,23 @@ export default async function BoPostsPage() {
   const posts = await Post.find()
     .sort({ updatedAt: -1 })
     .populate("ownerId", "email")
-    .lean()
+    .lean<LeanPostWithOwner[]>()
 
-  const data: BoPost[] = posts.map((p: any) => {
-    const obj = toClientPost(p)
+  const data: BoPost[] = posts.flatMap((p): BoPost[] => {
+    const obj = toClientPost(p as LeanPost)
+    if (!obj) return []
 
-    return {
+    return [{
       id: obj.id,
       name: obj.name,
       category: obj.category,
       subcategory: obj.subcategory,
       status: obj.status || "pending",
       ownerEmail:
-        (p.ownerId && typeof p.ownerId === "object" && p.ownerId.email) ||
+        (p.ownerId && typeof p.ownerId === "object" && "email" in p.ownerId && p.ownerId.email) ||
         p.seller_info?.email ||
         "",
-    }
+    }]
   })
 
   return (

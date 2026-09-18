@@ -36,8 +36,8 @@ export default function AdminLoginClient() {
       }
 
       window.location.href = next;
-    } catch (e: any) {
-      setErr(e?.message || "Login failed");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Login failed");
     } finally {
       setLoading(false);
     }

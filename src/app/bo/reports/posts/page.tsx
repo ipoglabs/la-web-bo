@@ -32,13 +32,13 @@ export default async function AdReportsPage() {
 
   // AdReport.adId is the listing's display id (Post.adsId), not the Mongo
   // _id — resolve it here so "View Ad" can link to the real bo/posts/[id].
-  const adIds = [...new Set(reports.map((r: any) => r.adId).filter(Boolean))]
+  const adIds = [...new Set(reports.map((r) => r.adId).filter(Boolean))]
   const posts = adIds.length
     ? await Post.find({ adsId: { $in: adIds } }).select("adsId").lean()
     : []
-  const postIdByAdsId = new Map(posts.map((p: any) => [p.adsId, p._id.toString()]))
+  const postIdByAdsId = new Map(posts.map((p) => [p.adsId, p._id.toString()]))
 
-  const rows = reports.map((r: any) => ({
+  const rows = reports.map((r) => ({
     id: r._id.toString(),
     ticketId: r.ticketId,
     adId: r.adId,

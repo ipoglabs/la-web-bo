@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth";
 
 type LocationData = { address?: string; lat?: number; lng?: number };
 
-function safeParse<T = any>(val: string, fallback: T): T {
+function safeParse<T = unknown>(val: string, fallback: T): T {
   try {
     return JSON.parse(val) as T;
   } catch {
@@ -35,7 +35,7 @@ const pullNumber = (v: FormDataEntryValue | null | undefined) => {
 const pullArray = (v: FormDataEntryValue | null | undefined) => {
   const s = pullString(v);
   if (!s) return [];
-  const parsed = safeParse<any>(s, []);
+  const parsed = safeParse<unknown>(s, []);
   if (Array.isArray(parsed)) return parsed;
   return String(s)
     .split(",")
@@ -43,12 +43,12 @@ const pullArray = (v: FormDataEntryValue | null | undefined) => {
     .filter(Boolean);
 };
 
-function stripUndef(obj: Record<string, any>) {
-  const out: Record<string, any> = {};
+function stripUndef(obj: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
     if (v === undefined) continue;
     if (Array.isArray(v)) out[k] = v;
-    else if (v && typeof v === "object" && !(v instanceof Date)) out[k] = stripUndef(v as any);
+    else if (v && typeof v === "object" && !(v instanceof Date)) out[k] = stripUndef(v as Record<string, unknown>);
     else out[k] = v;
   }
   return out;
@@ -174,7 +174,7 @@ const sessionEmail = normEmail(session.email);
         : mergedImages;
 
     // ----- Build update object (mostly your existing mapping) -----
-    const updateRaw: Record<string, any> = {
+    const updateRaw: Record<string, unknown> = {
       name,
       description,
       category,
@@ -332,9 +332,9 @@ const sessionEmail = normEmail(session.email);
       category: updateRaw.category ?? current.category,
       subcategory: updateRaw.subcategory ?? current.subcategory,
       seller_info: {
-        name: updateRaw.seller_info?.name ?? current.seller_info?.name,
-        email: updateRaw.seller_info?.email ?? current.seller_info?.email,
-        phone: updateRaw.seller_info?.phone ?? current.seller_info?.phone,
+        name: seller_info.name ?? current.seller_info?.name,
+        email: seller_info.email ?? current.seller_info?.email,
+        phone: seller_info.phone ?? current.seller_info?.phone,
       },
     };
 
@@ -370,8 +370,8 @@ const sessionEmail = normEmail(session.email);
     }
 
     return { ok: true, id: String(doc._id) };
-  } catch (e: any) {
+  } catch (e) {
     console.error("updatePost fatal error:", e);
-    return { ok: false, error: e?.message || "Unknown server error in updatePost" };
+    return { ok: false, error: e instanceof Error ? e.message : "Unknown server error in updatePost" };
   }
 }

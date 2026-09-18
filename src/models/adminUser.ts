@@ -1,6 +1,35 @@
-import mongoose, { Schema, models, model } from "mongoose"
+import mongoose, { Schema, models, model, type Model } from "mongoose"
 
-const AdminUserSchema = new Schema(
+export type AdminRole = "super_admin" | "admin" | "moderator" | "support" | "analyst";
+
+export interface IAdminUserAudit {
+  action: "role_change" | "status_change";
+  from?: string;
+  to?: string;
+  by?: mongoose.Types.ObjectId;
+  at?: Date;
+}
+
+export interface IAdminUser {
+  firstName: string;
+  lastName: string;
+  designation: string;
+  age: number;
+  gender: "male" | "female" | "other";
+  country: string;
+  location: string;
+  role: AdminRole;
+  employeeId: string;
+  email: string;
+  password: string;
+  isActive: boolean;
+  audit: IAdminUserAudit[];
+  createdBy?: mongoose.Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const AdminUserSchema = new Schema<IAdminUser>(
   {
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
@@ -72,5 +101,5 @@ const AdminUserSchema = new Schema(
   { timestamps: true }
 )
 
-export default models.AdminUser ||
-  model("AdminUser", AdminUserSchema)
+export default (models.AdminUser as Model<IAdminUser>) ||
+  model<IAdminUser>("AdminUser", AdminUserSchema)
