@@ -184,6 +184,9 @@ export interface IPost {
 
   urgency?: string;
 
+  /** Category-specific form values (make, brand, …) — mirrors la-web's Post. */
+  attributes?: Record<string, unknown>;
+
   /** ===== Moderation ===== */
   isSuspended?: boolean;
   suspendedAt?: Date;
@@ -366,6 +369,8 @@ const PostSchema = new Schema<IPost>(
     level: String,
 
     urgency: String,
+
+    attributes: { type: Schema.Types.Mixed },
 
     /* Moderation — real ad reports live on the separate AdReport collection
        (@/models/adReport), not embedded here. */

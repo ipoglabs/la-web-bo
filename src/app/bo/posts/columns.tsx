@@ -3,6 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { useState, useTransition } from "react"
+import { updatePostStatus } from "../actions/updatePostStatus"
 
 export type BoPost = {
   id: string
@@ -15,15 +17,33 @@ export type BoPost = {
 
 function ActionCell({ post }: { post: BoPost }) {
   const router = useRouter()
+  const [pending, start] = useTransition()
+  const [error, setError] = useState("")
+
+  const approve = () =>
+    start(async () => {
+      setError("")
+      const res = await updatePostStatus(post.id, "active")
+      if (res.ok) router.refresh()
+      else setError(res.error || "Failed")
+    })
 
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={() => router.push(`/bo/posts/${post.id}`)}
-    >
-      View
-    </Button>
+    <div className="flex flex-wrap items-center gap-2">
+      {post.status === "pending" && (
+        <Button size="sm" disabled={pending} onClick={approve}>
+          {pending ? "Approving…" : "Approve"}
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => router.push(`/bo/posts/${post.id}`)}
+      >
+        {post.status === "pending" ? "Review" : "View"}
+      </Button>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </div>
   )
 }
 

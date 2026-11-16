@@ -73,7 +73,33 @@ export default async function BoPostDetailsPage({
 
             </div>
 
+            {post.status === "rejected" && post.rejectionReason && (
+              <p className="mt-2 text-sm text-red-700">
+                Rejection reason: {post.rejectionReason}
+              </p>
+            )}
+
           </div>
+
+          {post.attributes && Object.keys(post.attributes).length > 0 && (
+            <div className="bg-white p-5 rounded-xl border shadow">
+              <h2 className="font-semibold mb-2">Details</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                {Object.entries(post.attributes).map(([key, value]) => (
+                  <div key={key} className="flex gap-2">
+                    <dt className="text-muted-foreground">{key}:</dt>
+                    <dd className="font-medium break-all">
+                      {Array.isArray(value)
+                        ? value.join(", ")
+                        : value !== null && typeof value === "object"
+                          ? JSON.stringify(value)
+                          : String(value ?? "-")}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
 
           <div className="bg-white p-5 rounded-xl border shadow">
 
