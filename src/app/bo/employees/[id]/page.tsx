@@ -79,6 +79,9 @@ export default async function BoEmployeeDetails({
             canChangeRole={canManage}
             canToggleStatus={canManage || superOnSuper}
             canResetTwoFactor={(canManage || superOnSuper) && Boolean(employee.twoFactorEnabled)}
+            canManageAccess={canManage || superOnSuper}
+            isLocked={Boolean(employee.lockedUntil && employee.lockedUntil > new Date())}
+            employeeLabel={`${employee.firstName} ${employee.lastName} (${employee.employeeId})`}
           />
         </div>
 

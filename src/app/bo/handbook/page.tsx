@@ -26,7 +26,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Deactivate staff on their last day, before they leave the building, not after.",
         "Monthly access review on BO Employees: remove anyone inactive 60+ days or whose job changed.",
         "Super Admin accounts are created only with scripts/create-super-admin.mjs, never shared.",
-        "Reset someone's two-factor (Staff → their page) only after confirming it's really them: call them back on a number you already have. A \"lost my phone\" message is exactly what an attacker would send.",
+        "Reset someone's password or two-factor, or unlock them (Staff → their page), only after confirming it's really them: call them back on a number you already have. A \"lost my phone\" message is exactly what an attacker would send.",
       ],
     },
     {
@@ -53,6 +53,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
       items: [
         "Create Moderator / Support / Analyst accounts for new joiners; share Employee ID and password separately.",
         "Deactivate team members who leave or move role, the same day.",
+        "Unlock or reset the password of Moderators, Support and Analysts from Staff → their page, after confirming by phone it's them. Give the temporary password in person or by call, never in the same chat as their Employee ID.",
         "Spot-check 10 moderator decisions a week from the audit log; coach on wrong calls.",
       ],
     },
