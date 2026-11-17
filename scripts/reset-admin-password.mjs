@@ -1,5 +1,8 @@
 // One-off admin password reset for the back office.
 //
+// Uses MONGODB_DB from .env.local (the test database). For the LIVE database
+// see scripts/_db.mjs: prefix MONGODB_DB=lokalads-staging and confirm.
+//
 // Usage (from repo root, needs MONGODB_URI in .env.local):
 //   node --env-file=.env.local scripts/reset-admin-password.mjs --list
 //   node --env-file=.env.local scripts/reset-admin-password.mjs <employeeId|email>
@@ -8,16 +11,11 @@
 // Resetting also unlocks the account, signs out all its sessions, makes them
 // choose their own password at next sign-in, and writes to the audit log.
 
-import mongoose from "mongoose";
+import { connectForScript, disconnect } from "./_db.mjs";
 import bcrypt from "bcryptjs";
 import readline from "node:readline";
 import os from "node:os";
 
-const { MONGODB_URI, MONGODB_DB } = process.env;
-if (!MONGODB_URI) {
-  console.error("MONGODB_URI is not set. Run with --env-file=.env.local");
-  process.exit(1);
-}
 
 function promptHidden(question) {
   return new Promise((resolve) => {
@@ -46,8 +44,8 @@ if (!arg) {
   process.exit(1);
 }
 
-await mongoose.connect(MONGODB_URI, { dbName: MONGODB_DB || undefined });
-const admins = mongoose.connection.db.collection("adminusers");
+const db = await connectForScript({ writes: arg !== "--list" });
+const admins = db.collection("adminusers");
 
 try {
   if (arg === "--list") {
@@ -85,7 +83,7 @@ try {
               $inc: { tokenVersion: 1 },
             },
           );
-          await mongoose.connection.db.collection("adminauditlogs").insertOne({
+          await db.collection("adminauditlogs").insertOne({
             actorEmail: `script:${os.userInfo().username}@${os.hostname()}`,
             actorRole: "script",
             action: "auth.password_reset",
@@ -100,5 +98,5 @@ try {
     }
   }
 } finally {
-  await mongoose.disconnect();
+  await disconnect();
 }
