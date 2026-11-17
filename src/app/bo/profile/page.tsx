@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdminPage } from "@/lib/adminGuard";
 import { ROLE_LABELS, ROLE_SUMMARY } from "@/lib/adminPermissions";
 import ChangePasswordForm from "./ChangePasswordForm";
+import TwoFactorSetup, { RegenerateRecoveryCodes } from "./TwoFactorSetup";
 
 export default async function AdminProfilePage() {
   const admin = await requireAdminPage(undefined, "/bo/profile");
@@ -32,6 +33,25 @@ export default async function AdminProfilePage() {
           Forgot your password? Ask a Super Admin to reset it. You&apos;ll be asked to choose a new one when you next
           sign in.
         </p>
+      </div>
+
+      <div id="two-factor" className="bg-white p-6 rounded-xl shadow space-y-4">
+        <h2 className="text-lg font-semibold">Two-factor sign-in</h2>
+        {admin.twoFactorEnabled ? (
+          <>
+            <p className="text-sm">
+              <b className="text-green-700">On.</b> You sign in with your password and a code from your authenticator
+              app.
+            </p>
+            <RegenerateRecoveryCodes />
+            <p className="text-xs text-muted-foreground">
+              Lost your phone? Sign in with a recovery code, then ask a Super Admin to reset your two-factor so you can
+              set it up on a new phone.
+            </p>
+          </>
+        ) : (
+          <TwoFactorSetup />
+        )}
       </div>
     </div>
   );

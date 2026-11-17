@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { changeEmployeeRole } from "../actions/changeRole"
 import { toggleEmployeeStatus } from "../actions/toggleStatus"
+import { resetEmployeeTwoFactor } from "../actions/resetTwoFactor"
 
 function askReason(question: string): string | null {
   const r = window.prompt(`${question}\n\nReason (saved to the audit log, min 5 characters):`)
@@ -30,6 +31,7 @@ export default function EmployeeActions({
   roleOptions,
   canChangeRole,
   canToggleStatus,
+  canResetTwoFactor = false,
 }: {
   id: string
   role: string
@@ -37,6 +39,7 @@ export default function EmployeeActions({
   roleOptions: { value: string; label: string }[]
   canChangeRole: boolean
   canToggleStatus: boolean
+  canResetTwoFactor?: boolean
 }) {
   const [pending, start] = useTransition()
   const router = useRouter()
@@ -64,7 +67,20 @@ export default function EmployeeActions({
     })
   }
 
-  if (!canChangeRole && !canToggleStatus) return null
+  const onResetTwoFactor = () => {
+    const reason = askReason(
+      "Reset two-factor sign-in? Only do this after confirming it's really them (call them on a known number). " +
+        "They are signed out and set up two-factor again at their next sign-in.",
+    )
+    if (!reason) return
+    start(async () => {
+      const res = await resetEmployeeTwoFactor(id, reason)
+      if (!res.ok) alert(res.error)
+      else router.refresh()
+    })
+  }
+
+  if (!canChangeRole && !canToggleStatus && !canResetTwoFactor) return null
 
   return (
     <div className="flex flex-wrap gap-3">
@@ -86,6 +102,12 @@ export default function EmployeeActions({
       {canToggleStatus && (
         <Button variant={isActive ? "destructive" : "outline"} disabled={pending} onClick={onToggleStatus}>
           {isActive ? "Deactivate" : "Activate"}
+        </Button>
+      )}
+
+      {canResetTwoFactor && (
+        <Button variant="outline" disabled={pending} onClick={onResetTwoFactor}>
+          Reset two-factor
         </Button>
       )}
     </div>

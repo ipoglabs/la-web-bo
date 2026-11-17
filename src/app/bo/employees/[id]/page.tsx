@@ -24,7 +24,7 @@ export default async function BoEmployeeDetails({
 
   const employee = await AdminUser.findById(id)
     .select(
-      "employeeId firstName lastName email role isActive country location designation age gender createdAt lastLoginAt lastLoginIp lockedUntil"
+      "employeeId firstName lastName email role isActive country location designation age gender createdAt lastLoginAt lastLoginIp lockedUntil twoFactorEnabled twoFactorEnabledAt"
     )
     .lean()
 
@@ -78,6 +78,7 @@ export default async function BoEmployeeDetails({
             roleOptions={roleOptions}
             canChangeRole={canManage}
             canToggleStatus={canManage || superOnSuper}
+            canResetTwoFactor={(canManage || superOnSuper) && Boolean(employee.twoFactorEnabled)}
           />
         </div>
 
@@ -100,6 +101,14 @@ export default async function BoEmployeeDetails({
               employee.lastLoginAt
                 ? `${new Date(employee.lastLoginAt).toLocaleString("en-GB")}${employee.lastLoginIp ? ` · ${employee.lastLoginIp}` : ""}`
                 : "Never"
+            }
+          />
+          <Info
+            label="Two-factor sign-in"
+            value={
+              employee.twoFactorEnabled
+                ? `On${employee.twoFactorEnabledAt ? ` since ${new Date(employee.twoFactorEnabledAt).toLocaleDateString("en-GB")}` : ""}`
+                : "Not set up yet (asked at next sign-in)"
             }
           />
           <Info label="Designation" value={employee.designation} />

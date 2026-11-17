@@ -99,6 +99,14 @@ export function assignableRoles(actor: AdminRole): AdminRole[] {
   return ADMIN_ROLES.filter((r) => canManageRole(actor, r));
 }
 
+/** Roles that must use two-factor sign-in. Everyone can see users' personal
+ *  data, so everyone needs it; narrow this list only with a good reason. */
+export const TWO_FACTOR_REQUIRED_ROLES: readonly AdminRole[] = ADMIN_ROLES;
+
+export function requiresTwoFactor(role: AdminRole): boolean {
+  return TWO_FACTOR_REQUIRED_ROLES.includes(role);
+}
+
 /** Password rules for back-office accounts. Returns an error message or null. */
 export function checkAdminPassword(pw: string): string | null {
   if (pw.length < 12) return "Password must be at least 12 characters.";

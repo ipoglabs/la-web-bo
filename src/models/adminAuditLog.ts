@@ -10,11 +10,16 @@ export const AUDIT_ACTIONS = [
   "auth.logout",
   "auth.password_reset", // written by scripts/reset-admin-password.mjs
   "auth.password_change", // staff changed their own password
+  "auth.2fa_enabled",
+  "auth.2fa_failed",
+  "auth.recovery_code_used",
+  "auth.recovery_codes_regenerated",
   // staff
   "staff.create",
   "staff.role_change",
   "staff.activate",
   "staff.deactivate",
+  "staff.2fa_reset",
   // end users
   "user.suspend",
   "user.unsuspend",
