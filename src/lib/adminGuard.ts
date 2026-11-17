@@ -5,9 +5,15 @@ import connectDB from "@/lib/db";
 import AdminUser from "@/models/adminUser";
 import AdminAuditLog, { type AuditAction, type AuditTargetType } from "@/models/adminAuditLog";
 import { ADMIN_COOKIE, verifyAdminJwt, type AdminSession } from "@/lib/adminAuth";
-import { hasPerm, type Permission } from "@/lib/adminPermissions";
+import { hasPerm, requiresTwoFactor, type Permission } from "@/lib/adminPermissions";
 
-export type AdminContext = AdminSession & { name: string; mustChangePassword: boolean };
+export type AdminContext = AdminSession & {
+  name: string;
+  mustChangePassword: boolean;
+  /** Role requires two-factor but it isn't set up yet. */
+  needsTwoFactorSetup: boolean;
+  twoFactorEnabled: boolean;
+};
 
 /** Verifies the cookie AND re-reads the account, so deactivating someone,
  *  changing their role or resetting their password takes effect on their very
@@ -19,7 +25,7 @@ export async function getAdmin(): Promise<AdminContext | null> {
 
   await connectDB();
   const admin = await AdminUser.findById(session.adminId)
-    .select("firstName lastName email role country isActive tokenVersion mustChangePassword")
+    .select("firstName lastName email role country isActive tokenVersion mustChangePassword twoFactorEnabled")
     .lean();
 
   if (!admin || !admin.isActive) return null;
@@ -33,6 +39,8 @@ export async function getAdmin(): Promise<AdminContext | null> {
     tv: admin.tokenVersion ?? 0,
     name: `${admin.firstName} ${admin.lastName}`.trim(),
     mustChangePassword: Boolean(admin.mustChangePassword),
+    needsTwoFactorSetup: requiresTwoFactor(admin.role) && !admin.twoFactorEnabled,
+    twoFactorEnabled: Boolean(admin.twoFactorEnabled),
   };
 }
 
@@ -46,6 +54,7 @@ export async function requireAdmin(perm?: Permission): Promise<Guard> {
   if (!admin) return { ok: false, error: "Your session has ended. Please sign in again." };
   // Someone else knows a temporary password: nothing but changing it is allowed.
   if (perm && admin.mustChangePassword) return { ok: false, error: "Set your own password first (My Profile)." };
+  if (perm && admin.needsTwoFactorSetup) return { ok: false, error: "Set up two-factor sign-in first." };
   if (perm && !hasPerm(admin.role, perm)) return { ok: false, error: "You don't have permission to do this." };
   return { ok: true, admin };
 }

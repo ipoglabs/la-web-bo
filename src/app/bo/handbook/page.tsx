@@ -3,6 +3,7 @@ import { ADMIN_ROLES, ROLE_LABELS, ROLE_PERMS, ROLE_SUMMARY, type AdminRole } fr
 
 const GOLDEN_RULES = [
   "Your account is yours alone. Never share your Employee ID, password or a signed-in browser.",
+  "Keep two-factor sign-in on your own phone only, and keep your recovery codes in a password manager, not on paper by your desk. Never read a sign-in code to anyone: no one at LokalAds will ever ask for it.",
   "Everything you do here is recorded in the audit log with your name, time and IP address. Act as if it will be reviewed, because it will be.",
   "Only open a user's data when a ticket, report or moderation task needs it. Curiosity is not a reason.",
   "Never copy user data (phone numbers, emails, chats, IDs) out of the back office into WhatsApp, personal email, screenshots or spreadsheets.",
@@ -25,12 +26,13 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Deactivate staff on their last day, before they leave the building, not after.",
         "Monthly access review on BO Employees: remove anyone inactive 60+ days or whose job changed.",
         "Super Admin accounts are created only with scripts/create-super-admin.mjs, never shared.",
+        "Reset someone's two-factor (Staff → their page) only after confirming it's really them: call them back on a number you already have. A \"lost my phone\" message is exactly what an attacker would send.",
       ],
     },
     {
       title: "Oversight",
       items: [
-        "Weekly: skim the audit log for failed logins/lock-outs, deletes, role changes and Dev Tools access.",
+        "Weekly: skim the audit log for failed logins/lock-outs, wrong two-factor codes, recovery-code sign-ins, deletes, role changes and Dev Tools access.",
         "Check every Dev Tools view (chats, deleted users) has a matching ticket or legal request.",
         "Approve permanent user deletions; only Super Admins can delete.",
       ],
@@ -39,6 +41,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
       title: "Security & incidents",
       items: [
         "Rotate ADMIN_JWT_SECRET if a secret or laptop may be compromised; this signs everyone out.",
+        "Never change or lose ADMIN_2FA_KEY: it decrypts everyone's authenticator setup. If it changes, every account has to have two-factor reset.",
         "Lead incident response: contain, preserve the audit log, notify affected users if required by law.",
         "Handle law-enforcement and legal data requests personally, and log the request reference as the reason.",
       ],

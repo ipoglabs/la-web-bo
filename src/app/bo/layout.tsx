@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminHeader from "./components/AdminHeader";
 import ChangePasswordForm from "./profile/ChangePasswordForm";
+import TwoFactorSetup from "./profile/TwoFactorSetup";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import OptionRequest from "@/models/optionRequest";
@@ -38,6 +39,27 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <AdminHeader name={admin.name || admin.email} email={admin.email} role={ROLE_LABELS[admin.role]} />
           </div>
           <ChangePasswordForm forced />
+        </div>
+      </div>
+    );
+  }
+
+  // Their role requires two-factor sign-in and it isn't set up yet.
+  if (admin.needsTwoFactorSetup) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white border rounded-2xl shadow p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-semibold">Set up two-factor sign-in</h1>
+              <p className="text-sm text-muted-foreground">
+                Back-office accounts need a code from your phone as well as your password, so a stolen password
+                alone can&apos;t get in. This takes about a minute.
+              </p>
+            </div>
+            <AdminHeader name={admin.name || admin.email} email={admin.email} role={ROLE_LABELS[admin.role]} />
+          </div>
+          <TwoFactorSetup />
         </div>
       </div>
     );

@@ -34,6 +34,13 @@ export interface IAdminUser {
   passwordChangedAt?: Date;
   /** Set when someone else chose the password (new account, reset). Cleared once they pick their own. */
   mustChangePassword: boolean;
+  /** Two-factor sign-in (authenticator app). Secrets are sealed with ADMIN_2FA_KEY. */
+  twoFactorEnabled: boolean;
+  twoFactorEnabledAt?: Date;
+  totpSecret?: string;
+  totpPendingSecret?: string;
+  totpLastStep?: number;
+  recoveryCodeHashes?: string[];
   audit: IAdminUserAudit[];
   createdBy?: mongoose.Types.ObjectId;
   createdAt?: Date;
@@ -96,6 +103,13 @@ const AdminUserSchema = new Schema<IAdminUser>(
     lastLoginIp: String,
     passwordChangedAt: Date,
     mustChangePassword: { type: Boolean, default: false },
+
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorEnabledAt: Date,
+    totpSecret: { type: String, select: false },
+    totpPendingSecret: { type: String, select: false },
+    totpLastStep: { type: Number, select: false },
+    recoveryCodeHashes: { type: [String], select: false, default: undefined },
 
     // ✅ AUDIT TRAIL
     audit: [
