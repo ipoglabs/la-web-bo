@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local database backups (encrypted, but never commit them)
+/backups/
+*.lkbk
+# the backup PUBLIC key is meant to be committed (it can only lock backups)
+!scripts/backup-public-key.pem

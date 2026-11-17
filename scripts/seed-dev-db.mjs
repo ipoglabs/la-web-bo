@@ -55,7 +55,8 @@ try {
     process.exit(1);
   }
   if (reset) {
-    await dev.dropDatabase();
+    // dropDatabase isn't allowed for this Atlas login; drop collections instead.
+    for (const c of existing) if (!c.name.startsWith("system.")) await dev.collection(c.name).drop();
     console.log("  wiped");
   }
 
