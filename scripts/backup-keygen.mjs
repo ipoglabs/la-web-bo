@@ -6,7 +6,7 @@
 // it, every backup is unreadable, by design. Never put it in GitHub or Vercel.
 //
 // Rotating: run with --force, commit the new public key, keep the OLD private
-// key too until the old backups have expired (90 days).
+// key too until the old backups have expired (30 days).
 
 import crypto from "node:crypto";
 import { existsSync, writeFileSync } from "node:fs";

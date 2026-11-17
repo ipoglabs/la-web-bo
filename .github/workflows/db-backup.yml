@@ -51,7 +51,7 @@ jobs:
         with:
           name: db-backup-${{ github.run_number }}
           path: ${{ env.BACKUP_FILE }}
-          retention-days: 90
+          retention-days: 30 # privacy policy: closed accounts gone within 30 days (UK), so backups too
           compression-level: 0 # already compressed + encrypted
           if-no-files-found: error
 
