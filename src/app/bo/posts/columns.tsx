@@ -13,6 +13,7 @@ export type BoPost = {
   subcategory: string
   status: "active" | "off" | "expired" | "pending" | "rejected" | "closed" | "deleted"
   ownerEmail?: string
+  thumb?: string
 }
 
 function ActionCell({ post }: { post: BoPost }) {
@@ -52,10 +53,24 @@ export const columns: ColumnDef<BoPost>[] = [
     accessorKey: "name",
     header: "Post",
     cell: ({ row }) => (
-      <div className="space-y-0.5">
-        <div className="font-medium">{row.original.name}</div>
-        <div className="text-xs text-muted-foreground">
-          {row.original.category} • {row.original.subcategory}
+      <div className="flex items-center gap-3">
+        <a
+          href={`/bo/posts/${row.original.id}`}
+          className="block size-14 shrink-0 overflow-hidden rounded-md border bg-slate-100"
+          aria-label={`Open ${row.original.name}`}
+        >
+          {row.original.thumb ? (
+            // eslint-disable-next-line @next/next/no-img-element -- external R2 URLs, admin-only page
+            <img src={row.original.thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
+          ) : (
+            <span className="flex h-full items-center justify-center text-[10px] text-muted-foreground">No photo</span>
+          )}
+        </a>
+        <div className="space-y-0.5 min-w-0">
+          <div className="font-medium">{row.original.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {row.original.category} • {row.original.subcategory}
+          </div>
         </div>
       </div>
     ),

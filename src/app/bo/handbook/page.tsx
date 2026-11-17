@@ -95,6 +95,8 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Approve when: photos match the item, price is realistic, category is right, contact details aren't in the description.",
         "Reject (with a reason the seller can act on) when: wrong category, misleading photos, missing info, duplicate ad, contact info in text.",
         "Escalate to an Admin (don't just reject) for: scams, weapons, drugs, adult content, stolen goods, counterfeit items, anything involving minors.",
+        "Bulk actions (tick ads on the Ads list, up to one page of 25): only for clear-cut cases where the title and photo are enough, e.g. obvious duplicates or spam, or a run of plainly fine ads. Anything you'd hesitate over: open it and decide on its own. A bulk reject sends every seller the same reason, so write one that is true for all of them.",
+        "Each ad in a bulk action is logged separately, with a shared batch id. Admins can see and review whole batches in the Audit log.",
       ],
     },
     {
@@ -145,7 +147,7 @@ const CADENCE: { when: string; who: string; items: string[] }[] = [
     when: "Every week",
     who: "Admin / Super Admin",
     items: [
-      "Spot-check moderator decisions in the Audit log",
+      "Spot-check moderator decisions in the Audit log, including bulk batches",
       "Review failed logins and lock-outs",
       "Clear Option requests",
       "Review all user suspensions and deletions for correct reasons",

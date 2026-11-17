@@ -6,6 +6,7 @@ import { toClientPost, type LeanPost } from "@/lib/serialize"
 import { BoPost } from "./columns"
 import BoPostsClient from "./BoPostsClient"
 import { requireAdminPage } from "@/lib/adminGuard"
+import { hasPerm } from "@/lib/adminPermissions"
 import { PAGE_SIZE, pageWindow, parsePage, searchFilter } from "@/lib/listQuery"
 import { ListPager, ListSearch } from "../components/ListControls"
 import type { Types } from "mongoose"
@@ -31,7 +32,7 @@ export default async function BoPostsPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string }>
 }) {
-  await requireAdminPage("posts.view", "/bo/posts")
+  const admin = await requireAdminPage("posts.view", "/bo/posts")
   const sp = await searchParams
   await connectDB()
 
@@ -80,6 +81,7 @@ export default async function BoPostsPage({
         (p.ownerId && typeof p.ownerId === "object" && "email" in p.ownerId && p.ownerId.email) ||
         p.seller_info?.email ||
         "",
+      thumb: (p.images ?? []).find(Boolean),
     }]
   })
 
@@ -121,7 +123,7 @@ export default async function BoPostsPage({
         <p className="text-sm text-muted-foreground">Nothing waiting for approval.</p>
       ) : (
         <>
-          <BoPostsClient data={data} />
+          <BoPostsClient data={data} canModerate={hasPerm(admin.role, "posts.moderate")} />
           <ListPager basePath="/bo/posts" params={params} page={w.current} pages={w.pages} from={w.from} to={w.to} total={matching} />
         </>
       )}
