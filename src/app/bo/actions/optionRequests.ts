@@ -51,6 +51,8 @@ export async function addOptionRequest(id: string, label: string): Promise<Actio
     const request = await OptionRequest.findOne({ _id: id, status: "pending" });
     if (!request) return { ok: false, error: "Request not found or already reviewed" };
     const { category, subcategory, country, fieldKey } = request;
+    // fieldKey came from a seller's request and ends up in an update path: plain names only.
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldKey)) return { ok: false, error: "This request has an invalid field name." };
 
     // la-web serves forms missing from the DB from its code defaults, which bo
     // doesn't have — those must be added from la-web's /admin instead.

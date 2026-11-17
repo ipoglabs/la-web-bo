@@ -19,6 +19,10 @@ interface RegisterBody {
   role?: string;
 }
 
+const GENDERS = ["male", "female", "other"] as const;
+type Gender = (typeof GENDERS)[number];
+const isGender = (g: string): g is Gender => (GENDERS as readonly string[]).includes(g);
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Atomic, so two admins creating staff at the same moment never collide.
@@ -65,9 +69,8 @@ export async function POST(req: Request) {
     if (!Number.isInteger(payload.age) || payload.age < 18 || payload.age > 100) {
       return bad("Age must be a whole number between 18 and 100.");
     }
-    if (!["male", "female", "other"].includes(payload.gender)) {
-      return bad("Choose a gender.");
-    }
+    const gender = payload.gender;
+    if (!isGender(gender)) return bad("Choose a gender.");
     if (!EMAIL_RE.test(email)) return bad("Enter a valid email address.");
     const pwError = checkAdminPassword(password);
     if (pwError) return bad(pwError);
@@ -81,6 +84,7 @@ export async function POST(req: Request) {
 
     const created = await AdminUser.create({
       ...payload,
+      gender,
       role,
       employeeId,
       password: passwordHash,
