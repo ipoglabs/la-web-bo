@@ -42,6 +42,8 @@ const DUTIES: Record<AdminRole, Duty[]> = {
       items: [
         "Rotate ADMIN_JWT_SECRET if a secret or laptop may be compromised; this signs everyone out.",
         "Never change or lose ADMIN_2FA_KEY: it decrypts everyone's authenticator setup. If it changes, every account has to have two-factor reset.",
+        "Read every Rollbar alert email the same day. \"critical\" (sign-in or audit-log failures) means drop other work; look at it now.",
+        "Monthly: press \"Send test alert\" on My Profile and check the email arrives. Silence is only good news if alerts work.",
         "Lead incident response: contain, preserve the audit log, notify affected users if required by law.",
         "Handle law-enforcement and legal data requests personally, and log the request reference as the reason.",
       ],

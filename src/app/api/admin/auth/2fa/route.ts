@@ -15,6 +15,7 @@ import {
 } from "@/lib/adminLogin";
 import { verifyTotp } from "@/lib/totp";
 import { open, hashRecoveryCode } from "@/lib/secretBox";
+import { reportError } from "@/lib/errorReport";
 
 const EXPIRED = "Your sign-in timed out. Enter your employee ID and password again.";
 
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
     admin.totpLastStep = step; // the same code can't be replayed
     return await completeLogin(admin, "totp");
   } catch (err) {
-    console.error("2FA verify error:", err);
+    await reportError(err, { where: "route:/api/admin/auth/2fa", level: "critical" });
     return NextResponse.json({ ok: false, error: "Something went wrong. Try again." }, { status: 500 });
   }
 }

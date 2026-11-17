@@ -4,6 +4,7 @@ import connectDB from "@/lib/db"
 import Post from "@/models/post"
 import { Types } from "mongoose"
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard"
+import { reportError } from "@/lib/errorReport"
 
 export async function suspendPost(postId: string, reason: string) {
   try {
@@ -44,7 +45,7 @@ export async function suspendPost(postId: string, reason: string) {
 
     return { ok: true }
   } catch (e) {
-    console.error("suspendPost error:", e)
+    await reportError(e, { where: "action:suspendPost" })
     return { ok: false, error: "Suspend failed" }
   }
 }

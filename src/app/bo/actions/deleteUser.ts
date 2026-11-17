@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard";
+import { reportError } from "@/lib/errorReport";
 
 /** Soft delete: the account is closed and hidden, data is kept for the audit trail. */
 export async function deleteUser(userId: string, reason: string) {
@@ -44,7 +45,7 @@ export async function deleteUser(userId: string, reason: string) {
 
     return { ok: true };
   } catch (e) {
-    console.error("deleteUser failed:", e);
+    await reportError(e, { where: "action:deleteUser" });
     return { ok: false, error: "Delete failed" };
   }
 }

@@ -5,6 +5,7 @@ import AdminUser from "@/models/adminUser"
 import { Types } from "mongoose"
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard"
 import { canManageRole, isAdminRole } from "@/lib/adminPermissions"
+import { reportError } from "@/lib/errorReport"
 
 export async function changeEmployeeRole(employeeId: string, nextRole: string, reason: string) {
   try {
@@ -54,7 +55,7 @@ export async function changeEmployeeRole(employeeId: string, nextRole: string, r
 
     return { ok: true }
   } catch (e) {
-    console.error("changeEmployeeRole failed:", e)
+    await reportError(e, { where: "action:changeEmployeeRole" })
     return { ok: false, error: "Role change failed" }
   }
 }

@@ -7,6 +7,7 @@ import AdminUser from "@/models/adminUser"
 import { Types } from "mongoose"
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard"
 import { canManageRole, checkAdminPassword } from "@/lib/adminPermissions"
+import { reportError } from "@/lib/errorReport"
 
 type Result = { ok: true } | { ok: false; error: string }
 type ResetResult = { ok: true; tempPassword: string } | { ok: false; error: string }
@@ -53,7 +54,7 @@ export async function unlockEmployee(employeeId: string, reason: string): Promis
     })
     return { ok: true }
   } catch (e) {
-    console.error("unlockEmployee failed:", e)
+    await reportError(e, { where: "action:unlockEmployee" })
     return { ok: false, error: "Unlock failed" }
   }
 }
@@ -102,7 +103,7 @@ export async function resetEmployeePassword(employeeId: string, reason: string):
     })
     return { ok: true, tempPassword: pw }
   } catch (e) {
-    console.error("resetEmployeePassword failed:", e)
+    await reportError(e, { where: "action:resetEmployeePassword" })
     return { ok: false, error: "Password reset failed" }
   }
 }

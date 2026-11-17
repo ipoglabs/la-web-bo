@@ -12,6 +12,7 @@ import {
   recordFailure,
   twoFactorChallengeResponse,
 } from "@/lib/adminLogin";
+import { reportError } from "@/lib/errorReport";
 
 interface LoginBody {
   employeeId?: string;
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
     // if their role requires it (see bo/layout.tsx).
     return await completeLogin(admin, "password");
   } catch (err) {
-    console.error("Admin login error:", err);
+    await reportError(err, { where: "route:/api/admin/auth/login", level: "critical" });
     return NextResponse.json({ ok: false, error: "Something went wrong during admin login." }, { status: 500 });
   }
 }

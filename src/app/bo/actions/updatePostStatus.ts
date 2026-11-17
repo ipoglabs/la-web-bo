@@ -5,6 +5,7 @@ import Post from "@/models/post";
 import { Types } from "mongoose";
 import { requireAdmin, logAdminAction, MAX_REASON } from "@/lib/adminGuard";
 import type { AuditAction } from "@/models/adminAuditLog";
+import { reportError } from "@/lib/errorReport";
 
 type Status = "active" | "off" | "expired" | "rejected";
 
@@ -57,7 +58,7 @@ export async function updatePostStatus(postId: string, status: Status, reason?: 
 
     return { ok: true };
   } catch (e) {
-    console.error("updatePostStatus error:", e);
+    await reportError(e, { where: "action:updatePostStatus" });
     return { ok: false, error: "Update failed" };
   }
 }

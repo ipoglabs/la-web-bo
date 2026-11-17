@@ -21,6 +21,7 @@ export const AUDIT_ACTIONS = [
   "staff.deactivate",
   "staff.2fa_reset",
   "staff.unlock",
+  "system.test_alert",
   // end users
   "user.suspend",
   "user.unsuspend",

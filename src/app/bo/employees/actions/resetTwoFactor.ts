@@ -5,6 +5,7 @@ import AdminUser from "@/models/adminUser"
 import { Types } from "mongoose"
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard"
 import { canManageRole } from "@/lib/adminPermissions"
+import { reportError } from "@/lib/errorReport"
 
 /** For a lost phone: turns two-factor off and signs them out everywhere. They
  *  set it up again at their next sign-in. Verify who's asking (call them back on
@@ -48,7 +49,7 @@ export async function resetEmployeeTwoFactor(employeeId: string, reason: string)
     })
     return { ok: true }
   } catch (e) {
-    console.error("resetEmployeeTwoFactor failed:", e)
+    await reportError(e, { where: "action:resetEmployeeTwoFactor" })
     return { ok: false, error: "Reset failed" }
   }
 }

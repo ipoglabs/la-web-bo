@@ -6,6 +6,7 @@ import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import OptionRequest from "@/models/optionRequest";
 import PostFormSchema, { type FormSection } from "@/models/postFormSchema";
 import Post from "@/models/post";
+import { reportError } from "@/lib/errorReport";
 
 /** Same rule as la-web's CUSTOM_OPTION (posting/form-schema/types.ts). */
 const OPTION_PATTERN = /^[\p{L}\p{N} .,'&()/+-]+$/u;
@@ -86,7 +87,7 @@ export async function addOptionRequest(id: string, label: string): Promise<Actio
     });
     return { ok: true };
   } catch (err) {
-    console.error("[option-requests] add failed:", err);
+    await reportError(err, { where: "action:addOptionRequest" });
     return { ok: false, error: "Couldn't add the option." };
   }
 }
