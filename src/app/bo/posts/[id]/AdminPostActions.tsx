@@ -7,19 +7,19 @@ import { useState, useTransition } from "react"
 import { updatePostStatus } from "../../actions/updatePostStatus"
 import { suspendPost } from "../../actions/suspendPost"
 
-const ALLOWED = ["super_admin", "admin", "moderator"]
-
 type ActionResult = { ok: boolean; error?: string }
 
 export default function AdminPostActions({
   postId,
   status,
-  role,
+  canModerate,
+  canSuspend,
   isSuspended,
 }: {
   postId: string
   status: string
-  role?: string
+  canModerate: boolean
+  canSuspend: boolean
   isSuspended: boolean
 }) {
 
@@ -29,7 +29,7 @@ export default function AdminPostActions({
   const [reason, setReason] = useState("")
   const router = useRouter()
 
-  if (!role || !ALLOWED.includes(role)) return null
+  if (!canModerate && !canSuspend) return null
 
   const act = (fn: () => Promise<ActionResult>) =>
     start(async () => {
@@ -44,6 +44,12 @@ export default function AdminPostActions({
       router.refresh()
     })
 
+  const onSuspend = () => {
+    const r = window.prompt("Suspend this ad? It goes offline and only an admin can bring it back.\n\nReason (saved to the audit log, min 5 characters):")
+    if (r === null) return
+    act(() => suspendPost(postId, r))
+  }
+
   return (
     <div className="bg-white p-5 rounded-xl border shadow space-y-3">
 
@@ -55,7 +61,7 @@ export default function AdminPostActions({
 
       <div className="flex flex-wrap gap-3">
 
-        {status !== "active" && (
+        {canModerate && status !== "active" && !(isSuspended && !canSuspend) && (
           <Button
             disabled={pending}
             onClick={() => act(() => updatePostStatus(postId, "active"))}
@@ -64,7 +70,7 @@ export default function AdminPostActions({
           </Button>
         )}
 
-        {status === "active" && (
+        {canModerate && status === "active" && (
           <Button
             variant="outline"
             disabled={pending}
@@ -74,7 +80,7 @@ export default function AdminPostActions({
           </Button>
         )}
 
-        {status !== "rejected" && (
+        {canModerate && status !== "rejected" && (
           <Button
             variant="destructive"
             disabled={pending}
@@ -84,11 +90,11 @@ export default function AdminPostActions({
           </Button>
         )}
 
-        {role !== "moderator" && (
+        {canSuspend && (
           <Button
             variant="destructive"
             disabled={pending || isSuspended}
-            onClick={() => act(() => suspendPost(postId))}
+            onClick={onSuspend}
           >
             {isSuspended ? "Suspended" : "Suspend"}
           </Button>

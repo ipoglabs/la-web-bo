@@ -1,12 +1,11 @@
-import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
 import Link from "next/link"
 import connectDB from "@/lib/db"
 import AdReport from "@/models/adReport"
 import Post from "@/models/post"
 import ViewReportModal from "./ViewReportModal"
 import ReviewReportButtons from "./ReviewReportButtons"
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
+import { requireAdminPage } from "@/lib/adminGuard"
+import { hasPerm } from "@/lib/adminPermissions"
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "text-amber-700 bg-amber-50",
@@ -17,12 +16,8 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function AdReportsPage() {
 
-  const token = (await cookies()).get(ADMIN_COOKIE)?.value || ""
-  const session = token ? verifyAdminJwt(token) : null
-
-  if (!session || !["super_admin", "admin", "moderator"].includes(session.role)) {
-    redirect("/bo")
-  }
+  const admin = await requireAdminPage("reports.view", "/bo/reports/posts")
+  const canReview = hasPerm(admin.role, "reports.review")
 
   await connectDB()
 
@@ -116,7 +111,7 @@ export default async function AdReportsPage() {
                       <span className="text-xs text-muted-foreground">Ad not found</span>
                     )}
                   </div>
-                  <ReviewReportButtons reportId={r.id} status={r.status} />
+                  {canReview && <ReviewReportButtons reportId={r.id} status={r.status} />}
                 </td>
 
               </tr>

@@ -1,57 +1,42 @@
-// middleware.ts
+// middleware.ts — first, cheap gate: a signed, unexpired bo token.
+// Account status and permissions are re-checked against the DB in
+// requireAdmin / requireAdminPage (src/lib/adminGuard.ts) on every page and action.
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify, type JWTPayload } from "jose";
-import type { AdminSession } from "@/lib/adminAuth";
+import { jwtVerify } from "jose";
+import { ADMIN_ROLES } from "@/lib/adminPermissions";
 
 const ADMIN_COOKIE = "admin_session";
+const ADMIN_JWT_AUDIENCE = "lokalads-bo";
 
-function isAdminRole(role?: string) {
-  return ["super_admin", "admin", "moderator", "support", "analyst"].includes(String(role || ""));
-}
-
-async function verifyEdgeJwt(token: string): Promise<(JWTPayload & Partial<AdminSession>) | null> {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) return null;
-
+async function hasValidToken(token: string): Promise<boolean> {
+  const secret = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
+  if (!secret) return false;
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    return payload as JWTPayload & Partial<AdminSession>;
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), {
+      audience: ADMIN_JWT_AUDIENCE,
+    });
+    return (ADMIN_ROLES as readonly string[]).includes(String(payload.role ?? ""));
   } catch {
-    return null;
+    return false;
   }
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
-  if (!pathname.startsWith("/bo")) return NextResponse.next();
-
-  // allow public admin pages
-  if (pathname === "/bo-login" || pathname === "/bo/register") {
-    return NextResponse.next();
-  }
-
   const token = req.cookies.get(ADMIN_COOKIE)?.value;
+  if (token && (await hasValidToken(token))) return NextResponse.next();
 
-  if (!token) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/bo-login";
-    url.searchParams.set("next", pathname + (search || ""));
-    return NextResponse.redirect(url);
-  }
-
-  const session = await verifyEdgeJwt(token);
-  if (!session || !isAdminRole(session.role)) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/bo-login";
-    url.searchParams.set("next", pathname + (search || ""));
-    return NextResponse.redirect(url);
-  }
-
-  return NextResponse.next();
+  const url = req.nextUrl.clone();
+  url.pathname = "/bo-login";
+  url.search = "";
+  url.searchParams.set("next", pathname + (search || ""));
+  const res = NextResponse.redirect(url);
+  if (token) res.cookies.set(ADMIN_COOKIE, "", { path: "/", maxAge: 0 });
+  return res;
 }
 
 export const config = {
-  matcher: ["/bo/:path*"],
+  matcher: ["/bo/:path*", "/bo"],
 };

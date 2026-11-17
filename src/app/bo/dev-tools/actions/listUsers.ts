@@ -1,6 +1,7 @@
 "use server";
 
 import connectDB from "@/lib/db";
+import { requireAdmin } from "@/lib/adminGuard";
 import DevToolsUser from "@/models/devtools/DevToolsUser";
 import type { DevToolsUser as DevToolsUserDTO } from "./types";
 
@@ -21,8 +22,9 @@ type UserLean = {
   createdAt: Date;
 };
 
-/** All users, newest first — gated by the /bo admin session (see bo/layout.tsx). */
+/** All users, newest first — super admin only (devtools.view). */
 export async function listUsers(): Promise<DevToolsUserDTO[]> {
+  if (!(await requireAdmin("devtools.view")).ok) return [];
   await connectDB();
 
   const users = await DevToolsUser.find({}).sort({ createdAt: -1 }).lean<UserLean[]>();

@@ -1,8 +1,9 @@
-import { cookies } from "next/headers"
-import { redirect, notFound } from "next/navigation"
+import { notFound } from "next/navigation"
 import connectDB from "@/lib/db"
 import AdminUser from "@/models/adminUser"
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
+import AdminAuditLog from "@/models/adminAuditLog"
+import { requireAdminPage } from "@/lib/adminGuard"
+import { canManageRole, hasPerm, assignableRoles, ROLE_LABELS, type AdminRole } from "@/lib/adminPermissions"
 import Link from "next/link"
 import { Types } from "mongoose"
 import EmployeeActions from "./EmployeeActions"
@@ -12,16 +13,8 @@ export default async function BoEmployeeDetails({
 }: {
   params: Promise<{ id: string }>
 }) {
-  // 🔐 Auth
-  const cookieStore = await cookies()
-  const token = cookieStore.get(ADMIN_COOKIE)?.value || ""
-  const session = token ? verifyAdminJwt(token) : null
-
-  if (!session || session.role !== "super_admin") {
-    redirect("/bo")
-  }
-
   const { id } = await params
+  const admin = await requireAdminPage("staff.view", `/bo/employees/${id}`)
 
   if (!Types.ObjectId.isValid(id)) {
     return notFound()
@@ -31,11 +24,28 @@ export default async function BoEmployeeDetails({
 
   const employee = await AdminUser.findById(id)
     .select(
-      "employeeId firstName lastName email role isActive country location designation age gender createdAt"
+      "employeeId firstName lastName email role isActive country location designation age gender createdAt lastLoginAt lastLoginIp lockedUntil"
     )
     .lean()
 
   if (!employee) return notFound()
+
+  const isSelf = admin.adminId === id
+  const targetRole = employee.role as AdminRole
+  const canManage = !isSelf && hasPerm(admin.role, "staff.manage") && canManageRole(admin.role, targetRole)
+  const superOnSuper = !isSelf && admin.role === "super_admin" && targetRole === "super_admin"
+  const roleOptions = [...new Set<AdminRole>([targetRole, ...assignableRoles(admin.role)])].map((r) => ({
+    value: r,
+    label: ROLE_LABELS[r],
+  }))
+
+  // What this person did, and what was done to their account.
+  const history = hasPerm(admin.role, "audit.view")
+    ? await AdminAuditLog.find({ $or: [{ actorId: id }, { targetType: "admin", targetId: id }] })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean()
+    : []
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -65,13 +75,33 @@ export default async function BoEmployeeDetails({
             id={id}
             role={employee.role}
             isActive={employee.isActive}
+            roleOptions={roleOptions}
+            canChangeRole={canManage}
+            canToggleStatus={canManage || superOnSuper}
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <Info label="Email" value={employee.email} />
-          <Info label="Role" value={employee.role} capitalize />
-          <Info label="Status" value={employee.isActive ? "Active" : "Inactive"} />
+          <Info label="Role" value={ROLE_LABELS[targetRole] ?? employee.role} />
+          <Info
+            label="Status"
+            value={
+              !employee.isActive
+                ? "Inactive"
+                : employee.lockedUntil && employee.lockedUntil > new Date()
+                  ? "Locked (too many failed logins)"
+                  : "Active"
+            }
+          />
+          <Info
+            label="Last login"
+            value={
+              employee.lastLoginAt
+                ? `${new Date(employee.lastLoginAt).toLocaleString("en-GB")}${employee.lastLoginIp ? ` · ${employee.lastLoginIp}` : ""}`
+                : "Never"
+            }
+          />
           <Info label="Designation" value={employee.designation} />
           <Info label="Gender" value={employee.gender} capitalize />
           <Info label="Age" value={String(employee.age)} />
@@ -87,6 +117,31 @@ export default async function BoEmployeeDetails({
           />
         </div>
       </div>
+
+      {history.length > 0 && (
+        <div className="bg-white rounded-xl border shadow p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Recent activity</h2>
+            <Link href={`/bo/audit-log?actor=${id}`} className="text-sm text-primary hover:underline">
+              Full log →
+            </Link>
+          </div>
+          <ul className="divide-y text-sm">
+            {history.map((h) => (
+              <li key={String(h._id)} className="py-2 flex flex-wrap gap-x-3">
+                <span className="text-xs text-muted-foreground w-36">
+                  {new Date(h.createdAt).toLocaleString("en-GB")}
+                </span>
+                <span className="font-mono text-xs">{h.action}</span>
+                <span className="text-muted-foreground">
+                  {String(h.actorId) === id ? h.targetLabel : `by ${h.actorEmail}`}
+                </span>
+                {h.reason && <span className="italic text-muted-foreground">“{h.reason}”</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }

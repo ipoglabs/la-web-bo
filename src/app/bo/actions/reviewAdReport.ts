@@ -1,42 +1,47 @@
 "use server";
 
-import { cookies } from "next/headers";
 import connectDB from "@/lib/db";
 import AdReport from "@/models/adReport";
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 import { Types } from "mongoose";
+import { requireAdmin, logAdminAction, MAX_REASON } from "@/lib/adminGuard";
 
-const ALLOWED = ["super_admin", "admin", "moderator"];
+const STATUSES = ["reviewed", "actioned", "dismissed"] as const;
 
 /** Marks a real end-user ad report (AdReport, submitted from the live site)
  * as reviewed/actioned/dismissed, with an optional admin note. bo never
  * creates AdReport docs — only reviews the ones already submitted. */
 export async function reviewAdReport(
   reportId: string,
-  status: "reviewed" | "actioned" | "dismissed",
-  resolution?: string
+  status: (typeof STATUSES)[number],
+  resolution?: string,
 ) {
   try {
-    const token = (await cookies()).get(ADMIN_COOKIE)?.value || "";
-    const session = token ? verifyAdminJwt(token) : null;
-
-    if (!session || !ALLOWED.includes(session.role)) return { ok: false, error: "Forbidden" };
+    if (!STATUSES.includes(status)) return { ok: false, error: "Invalid status" };
     if (!Types.ObjectId.isValid(reportId)) return { ok: false, error: "Invalid report id" };
+
+    const guard = await requireAdmin("reports.review");
+    if (!guard.ok) return guard;
+    const { admin } = guard;
 
     await connectDB();
 
-    const updated = await AdReport.findByIdAndUpdate(
+    const note = resolution?.trim().slice(0, MAX_REASON) || null;
+    const before = await AdReport.findByIdAndUpdate(
       reportId,
-      {
-        status,
-        reviewedAt: new Date(),
-        reviewedBy: session.email,
-        resolution: resolution?.trim() || null,
-      },
-      { new: true }
-    );
+      { status, reviewedAt: new Date(), reviewedBy: admin.email, resolution: note },
+      { new: false },
+    ).lean();
 
-    if (!updated) return { ok: false, error: "Report not found" };
+    if (!before) return { ok: false, error: "Report not found" };
+
+    await logAdminAction(admin, {
+      action: "report.review",
+      targetType: "report",
+      targetId: reportId,
+      targetLabel: before.adId ? `Ad ${before.adId}` : undefined,
+      reason: note || undefined,
+      meta: { from: before.status, to: status },
+    });
 
     return { ok: true };
   } catch (e) {

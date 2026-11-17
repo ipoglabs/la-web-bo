@@ -1,14 +1,14 @@
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import User, { type IUser } from "@/models/user";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { toClientPost, type LeanPost } from "@/lib/serialize";
 import AdminUserAdCard from "./AdminUserAdCard";
 import AdminUserActions from "./AdminUserActions";
 import { Types } from "mongoose";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { ADMIN_COOKIE, verifyAdminJwt, isAdminRole } from "@/lib/adminAuth";
+import { requireAdminPage } from "@/lib/adminGuard";
+import { hasPerm } from "@/lib/adminPermissions";
 
 function Pill({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -31,13 +31,7 @@ export default async function BoUserAds({
 }) {
   const { id } = await params;
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE)?.value || "";
-  const session = token ? verifyAdminJwt(token) : null;
-
-  if (!session || !isAdminRole(session.role)) {
-    redirect("/bo-login?next=/bo/users/" + id);
-  }
+  const admin = await requireAdminPage("users.view", "/bo/users/" + id);
 
   if (!Types.ObjectId.isValid(id)) return notFound();
 
@@ -87,7 +81,8 @@ export default async function BoUserAds({
         </Link>
 
         <AdminUserActions
-          viewerRole={session.role}
+          canSuspend={hasPerm(admin.role, "users.suspend")}
+          canDelete={hasPerm(admin.role, "users.delete")}
           userId={id}
           userEmail={user.email}
           isSuspended={isSuspended}

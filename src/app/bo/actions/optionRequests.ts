@@ -1,27 +1,17 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { Types } from "mongoose";
 import connectDB from "@/lib/db";
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
+import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import OptionRequest from "@/models/optionRequest";
 import PostFormSchema, { type FormSection } from "@/models/postFormSchema";
 import Post from "@/models/post";
-
-/** Changing post forms is configuration — admins only. */
-const ALLOWED = ["super_admin", "admin"];
 
 /** Same rule as la-web's CUSTOM_OPTION (posting/form-schema/types.ts). */
 const OPTION_PATTERN = /^[\p{L}\p{N} .,'&()/+-]+$/u;
 const OPTION_MAX = 40;
 
 type ActionResult = { ok: true } | { ok: false; error: string };
-
-async function requireAdmin() {
-  const token = (await cookies()).get(ADMIN_COOKIE)?.value || "";
-  const session = token ? verifyAdminJwt(token) : null;
-  return session && ALLOWED.includes(session.role) ? session : null;
-}
 
 /** Port of la-web's withOption: insert alphabetically (after a leading "Any"), skip duplicates. */
 function withOption(sections: FormSection[], fieldKey: string, value: string): { sections: FormSection[]; found: boolean } {
@@ -45,8 +35,10 @@ function withOption(sections: FormSection[], fieldKey: string, value: string): {
 }
 
 export async function addOptionRequest(id: string, label: string): Promise<ActionResult> {
-  const session = await requireAdmin();
-  if (!session) return { ok: false, error: "Forbidden" };
+  // Changing post forms is configuration — admins only.
+  const guard = await requireAdmin("options.review");
+  if (!guard.ok) return guard;
+  const session = guard.admin;
   if (!Types.ObjectId.isValid(id)) return { ok: false, error: "Invalid request id" };
 
   const value = label.trim().replace(/\s+/g, " ");
@@ -83,6 +75,13 @@ export async function addOptionRequest(id: string, label: string): Promise<Actio
     request.reviewedAt = new Date();
     request.reviewedBy = session.email;
     await request.save();
+    await logAdminAction(session, {
+      action: "option.add",
+      targetType: "option_request",
+      targetId: id,
+      targetLabel: `${category} › ${subcategory} (${country}) · ${request.fieldLabel}: ${value}`,
+      meta: { postsUpdated: request.postIds?.length ?? 0 },
+    });
     return { ok: true };
   } catch (err) {
     console.error("[option-requests] add failed:", err);
@@ -92,17 +91,26 @@ export async function addOptionRequest(id: string, label: string): Promise<Actio
 
 /** Leaves the form as it is; the posts keep the typed value. */
 export async function dismissOptionRequest(id: string): Promise<ActionResult> {
-  const session = await requireAdmin();
-  if (!session) return { ok: false, error: "Forbidden" };
+  // Changing post forms is configuration — admins only.
+  const guard = await requireAdmin("options.review");
+  if (!guard.ok) return guard;
+  const session = guard.admin;
   if (!Types.ObjectId.isValid(id)) return { ok: false, error: "Invalid request id" };
 
   try {
     await connectDB();
-    const res = await OptionRequest.updateOne(
+    const req = await OptionRequest.findOneAndUpdate(
       { _id: id, status: "pending" },
       { $set: { status: "dismissed", reviewedAt: new Date(), reviewedBy: session.email } },
-    );
-    return res.matchedCount ? { ok: true } : { ok: false, error: "Request not found or already reviewed" };
+    ).lean();
+    if (!req) return { ok: false, error: "Request not found or already reviewed" };
+    await logAdminAction(session, {
+      action: "option.dismiss",
+      targetType: "option_request",
+      targetId: id,
+      targetLabel: `${req.category} › ${req.subcategory} (${req.country}) · ${req.fieldLabel}: ${req.value}`,
+    });
+    return { ok: true };
   } catch {
     return { ok: false, error: "Couldn't dismiss the request." };
   }

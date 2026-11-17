@@ -1,13 +1,12 @@
 import connectDB from "@/lib/db"
 import OptionRequest from "@/models/optionRequest"
-import { cookies } from "next/headers"
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
+import { requireAdminPage } from "@/lib/adminGuard"
+import { hasPerm } from "@/lib/adminPermissions"
 import OptionRequestCard from "./OptionRequestCard"
 
 export default async function OptionRequestsPage() {
-  const token = (await cookies()).get(ADMIN_COOKIE)?.value || ""
-  const session = token ? verifyAdminJwt(token) : null
-  const canReview = !!session && ["super_admin", "admin"].includes(session.role)
+  const admin = await requireAdminPage("posts.view", "/bo/option-requests")
+  const canReview = hasPerm(admin.role, "options.review")
 
   await connectDB()
   const rows = await OptionRequest.find({ status: "pending" }).sort({ createdAt: -1 }).limit(500).lean()

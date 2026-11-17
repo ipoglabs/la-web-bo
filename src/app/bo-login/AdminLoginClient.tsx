@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 
 export default function AdminLoginClient() {
   const sp = useSearchParams();
-  const next = sp.get("next") || "/bo";
+  // Only ever send people back inside bo — never to an outside URL.
+  const raw = sp.get("next") || "";
+  const next = /^\/bo(\/|\?|$)/.test(raw) ? raw : "/bo";
 
   const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");

@@ -7,8 +7,8 @@ import Link from "next/link"
 import { Types } from "mongoose"
 import AdminPostActions from "./AdminPostActions"
 import { REPORT_ISSUE_LABELS } from "@/lib/reportIssueLabels"
-import { cookies } from "next/headers"
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
+import { requireAdminPage } from "@/lib/adminGuard"
+import { hasPerm } from "@/lib/adminPermissions"
 import { decodeEntities, detailRows, formatDate } from "./postFields"
 
 const STATUS_STYLES: Record<string, string> = {
@@ -49,9 +49,7 @@ export default async function BoPostDetailsPage({
 
   if (!Types.ObjectId.isValid(id)) return notFound()
 
-  const cookieStore = await cookies()
-  const token = cookieStore.get(ADMIN_COOKIE)?.value || ""
-  const session = token ? verifyAdminJwt(token) : null
+  const admin = await requireAdminPage("posts.view", `/bo/posts/${id}`)
 
   await connectDB()
 
@@ -210,7 +208,8 @@ export default async function BoPostDetailsPage({
           <AdminPostActions
             postId={post._id.toString()}
             status={status}
-            role={session?.role}
+            canModerate={hasPerm(admin.role, "posts.moderate")}
+            canSuspend={hasPerm(admin.role, "posts.suspend")}
             isSuspended={!!post.isSuspended}
           />
 

@@ -2,8 +2,10 @@
 import connectDB from "@/lib/db"
 import User from "@/models/user"
 import BoUsersClient from "./BoUsersClient"
+import { requireAdminPage } from "@/lib/adminGuard"
 
 export default async function BoUsersPage() {
+  await requireAdminPage("users.view", "/bo/users")
   await connectDB()
 
   const users = await User.find()
