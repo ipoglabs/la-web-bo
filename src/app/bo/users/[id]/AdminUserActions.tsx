@@ -3,39 +3,45 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { deleteUser } from "../../../actions/deleteUser";
+import { deleteUser } from "@/app/bo/actions/deleteUser";
 import { suspendUser } from "@/app/bo/actions/suspendUser";
 
-const CAN_SUSPEND = ["super_admin", "admin"] as const;
-const CAN_DELETE = ["super_admin"] as const;
+/** Asks for the reason that goes into the audit log. null = cancelled. */
+function askReason(question: string): string | null {
+  const r = window.prompt(`${question}\n\nReason (saved to the audit log, min 5 characters):`);
+  if (r === null) return null;
+  if (r.trim().length < 5) {
+    alert("A reason of at least 5 characters is required.");
+    return null;
+  }
+  return r.trim();
+}
 
 export default function AdminUserActions({
-  viewerRole,
+  canSuspend,
+  canDelete,
   userId,
   userEmail,
   isSuspended,
 }: {
-  viewerRole: string;
+  canSuspend: boolean;
+  canDelete: boolean;
   userId: string;
   userEmail?: string;
   isSuspended: boolean;
 }) {
   const [pending, start] = useTransition();
   const router = useRouter();
-
-  const canSuspend = (CAN_SUSPEND as readonly string[]).includes(viewerRole);
-  const canDelete = (CAN_DELETE as readonly string[]).includes(viewerRole);
-
   const [localSuspended, setLocalSuspended] = useState(isSuspended);
 
-  const onDelete = () => {
-    if (!canDelete) return;
+  const who = userEmail || userId;
 
-    const ok = confirm(`Soft delete this user?\n\n${userEmail || userId}`);
-    if (!ok) return;
+  const onDelete = () => {
+    const reason = askReason(`Delete this user account?\n${who}\n\nThe account is closed and hidden; data is kept.`);
+    if (!reason) return;
 
     start(async () => {
-      const res = await deleteUser(userId);
+      const res = await deleteUser(userId, reason);
       if (!res?.ok) {
         alert(res?.error || "Delete failed");
         return;
@@ -46,16 +52,12 @@ export default function AdminUserActions({
   };
 
   const onToggleSuspend = () => {
-    if (!canSuspend) return;
-
     const next = !localSuspended;
-    const ok = confirm(
-      `${next ? "Suspend" : "Unsuspend"} this user?\n\n${userEmail || userId}`
-    );
-    if (!ok) return;
+    const reason = askReason(`${next ? "Suspend" : "Unsuspend"} this user?\n${who}`);
+    if (!reason) return;
 
     start(async () => {
-      const res = await suspendUser(userId, next);
+      const res = await suspendUser(userId, next, reason);
       if (!res?.ok) {
         alert(res?.error || "Suspend failed");
         return;
@@ -65,26 +67,18 @@ export default function AdminUserActions({
     });
   };
 
+  if (!canSuspend && !canDelete) return null;
+
   return (
     <div className="flex flex-wrap gap-2 justify-end">
       {canSuspend && (
-        <Button
-          variant={localSuspended ? "outline" : "secondary"}
-          size="sm"
-          disabled={pending}
-          onClick={onToggleSuspend}
-        >
+        <Button variant={localSuspended ? "outline" : "secondary"} size="sm" disabled={pending} onClick={onToggleSuspend}>
           {pending ? "Saving..." : localSuspended ? "Unsuspend" : "Suspend"}
         </Button>
       )}
 
       {canDelete && (
-        <Button
-          variant="destructive"
-          size="sm"
-          disabled={pending}
-          onClick={onDelete}
-        >
+        <Button variant="destructive" size="sm" disabled={pending} onClick={onDelete}>
           {pending ? "Deleting..." : "Delete User"}
         </Button>
       )}

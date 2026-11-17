@@ -1,6 +1,8 @@
 import mongoose, { Schema, models, model, type Model } from "mongoose"
 
-export type AdminRole = "super_admin" | "admin" | "moderator" | "support" | "analyst";
+import { ADMIN_ROLES, type AdminRole } from "@/lib/adminPermissions"
+
+export type { AdminRole }
 
 export interface IAdminUserAudit {
   action: "role_change" | "status_change";
@@ -23,6 +25,13 @@ export interface IAdminUser {
   email: string;
   password: string;
   isActive: boolean;
+  /** Bump to sign the account out everywhere (deactivate, role change, password reset). */
+  tokenVersion: number;
+  failedLoginCount: number;
+  lockedUntil?: Date;
+  lastLoginAt?: Date;
+  lastLoginIp?: string;
+  passwordChangedAt?: Date;
   audit: IAdminUserAudit[];
   createdBy?: mongoose.Types.ObjectId;
   createdAt?: Date;
@@ -47,7 +56,7 @@ const AdminUserSchema = new Schema<IAdminUser>(
 
     role: {
       type: String,
-      enum: ["super_admin", "admin", "moderator", "support", "analyst"],
+      enum: ADMIN_ROLES,
       required: true,
       index: true,
     },
@@ -77,6 +86,13 @@ const AdminUserSchema = new Schema<IAdminUser>(
       type: Boolean,
       default: true,
     },
+
+    tokenVersion: { type: Number, default: 0 },
+    failedLoginCount: { type: Number, default: 0 },
+    lockedUntil: Date,
+    lastLoginAt: Date,
+    lastLoginIp: String,
+    passwordChangedAt: Date,
 
     // ✅ AUDIT TRAIL
     audit: [

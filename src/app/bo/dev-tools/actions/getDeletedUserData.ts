@@ -2,6 +2,7 @@
 
 import { Types } from "mongoose";
 import connectDB from "@/lib/db";
+import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import DevToolsPost from "@/models/devtools/DevToolsPost";
 import DevToolsConversation from "@/models/devtools/DevToolsConversation";
 import type { DevToolsDeletedUserData } from "./types";
@@ -37,6 +38,9 @@ type ConversationLean = {
  */
 export async function getDeletedUserData(userId: string): Promise<DevToolsDeletedUserData> {
   if (!Types.ObjectId.isValid(userId)) return { listings: [], conversations: [] };
+  const guard = await requireAdmin("devtools.view");
+  if (!guard.ok) return { listings: [], conversations: [] };
+  await logAdminAction(guard.admin, { action: "devtools.view_deleted_user", targetType: "user", targetId: userId });
   await connectDB();
 
   const uid = new Types.ObjectId(userId);

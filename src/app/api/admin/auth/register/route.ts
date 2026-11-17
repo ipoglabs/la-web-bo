@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import AdminUser from "@/models/adminUser";
-import Counter from "@/models/counter"; // ✅ using your existing file
+import Counter from "@/models/counter";
 import { hash } from "bcryptjs";
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
+import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
+import { canManageRole, checkAdminPassword, isAdminRole } from "@/lib/adminPermissions";
 
 interface RegisterBody {
   email?: string;
@@ -18,55 +19,31 @@ interface RegisterBody {
   role?: string;
 }
 
-function canCreateRole(creatorRole: string, targetRole: string) {
-  if (creatorRole === "super_admin") {
-    return ["admin", "moderator", "support", "analyst"].includes(targetRole);
-  }
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (creatorRole === "admin") {
-    return ["moderator", "support", "analyst"].includes(targetRole);
-  }
-
-  return false;
-}
-
-// 🔢 Production Safe Atomic Generator
+// Atomic, so two admins creating staff at the same moment never collide.
 async function getNextEmployeeId() {
   const counter = await Counter.findOneAndUpdate(
-    { _id: "employeeId" },      // sequence name
-    { $inc: { seq: 1 } },       // atomic increment
-    { new: true, upsert: true } // create if not exists
+    { _id: "employeeId" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true },
   );
-
-  const nextNumber = counter.seq;
-
-  return `LA${String(nextNumber).padStart(7, "0")}`;
+  return `LA${String(counter.seq).padStart(7, "0")}`;
 }
+
+const bad = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
 export async function POST(req: Request) {
   try {
-    await dbConnect();
-
-    const token = req.headers
-      .get("cookie")
-      ?.split(";")
-      .map((s) => s.trim())
-      .find((s) => s.startsWith(`${ADMIN_COOKIE}=`))
-      ?.split("=")[1];
-
-    const session = token ? verifyAdminJwt(token) : null;
-
-    if (!session) {
-      return NextResponse.json(
-        { ok: false, error: "Not authenticated" },
-        { status: 401 }
-      );
-    }
+    const guard = await requireAdmin("staff.create");
+    if (!guard.ok) return bad(guard.error, 403);
+    const { admin } = guard;
 
     const body: RegisterBody = await req.json().catch(() => ({}));
 
     const email = String(body?.email ?? "").toLowerCase().trim();
     const password = String(body?.password ?? "");
+    const role = String(body?.role ?? "");
 
     const payload = {
       firstName: String(body?.firstName ?? "").trim(),
@@ -76,50 +53,53 @@ export async function POST(req: Request) {
       gender: String(body?.gender ?? ""),
       country: String(body?.country ?? "").trim(),
       location: String(body?.location ?? "").trim(),
-      role: String(body?.role ?? ""),
       email,
     };
 
-    // 🔐 ROLE PERMISSION CHECK
-    if (!canCreateRole(session.role, payload.role)) {
-      return NextResponse.json(
-        { ok: false, error: "You are not allowed to create this role" },
-        { status: 403 }
-      );
+    if (!isAdminRole(role) || !canManageRole(admin.role, role)) {
+      return bad("You are not allowed to create this role.", 403);
     }
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { ok: false, error: "Email/password required" },
-        { status: 400 }
-      );
+    if (!payload.firstName || !payload.lastName || !payload.designation || !payload.country || !payload.location) {
+      return bad("Fill in name, designation, country and location.");
     }
-
-    // 🔍 Email duplicate check
-    const emailExists = await AdminUser.findOne({ email }).lean();
-    if (emailExists) {
-      return NextResponse.json(
-        { ok: false, error: "Email already exists" },
-        { status: 409 }
-      );
+    if (!Number.isInteger(payload.age) || payload.age < 18 || payload.age > 100) {
+      return bad("Age must be a whole number between 18 and 100.");
     }
+    if (!["male", "female", "other"].includes(payload.gender)) {
+      return bad("Choose a gender.");
+    }
+    if (!EMAIL_RE.test(email)) return bad("Enter a valid email address.");
+    const pwError = checkAdminPassword(password);
+    if (pwError) return bad(pwError);
 
-    // 🔢 Generate employee ID safely
+    await dbConnect();
+
+    if (await AdminUser.exists({ email })) return bad("An account with this email already exists.", 409);
+
     const employeeId = await getNextEmployeeId();
+    const passwordHash = await hash(password, 12);
 
-    const passwordHash = await hash(password, 10);
-
-    await AdminUser.create({
+    const created = await AdminUser.create({
       ...payload,
+      role,
       employeeId,
       password: passwordHash,
-      createdBy: session.adminId,
+      passwordChangedAt: new Date(),
+      createdBy: admin.adminId,
       isActive: true,
     });
 
-    return NextResponse.json({ ok: true }, { status: 201 });
+    await logAdminAction(admin, {
+      action: "staff.create",
+      targetType: "admin",
+      targetId: String(created._id),
+      targetLabel: `${employeeId} · ${email}`,
+      meta: { role },
+    });
+
+    return NextResponse.json({ ok: true, employeeId }, { status: 201 });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Register failed";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    console.error("BO register failed:", e);
+    return bad("Couldn't create the account.", 500);
   }
 }

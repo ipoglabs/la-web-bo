@@ -5,6 +5,7 @@ import Link from "next/link"
 import { toClientPost, type LeanPost } from "@/lib/serialize"
 import { BoPost } from "./columns"
 import BoPostsClient from "./BoPostsClient"
+import { requireAdminPage } from "@/lib/adminGuard"
 import type { Types } from "mongoose"
 
 type PopulatedOwner = { _id: Types.ObjectId; email?: string };
@@ -28,6 +29,7 @@ export default async function BoPostsPage({
 }: {
   searchParams: Promise<{ status?: string }>
 }) {
+  await requireAdminPage("posts.view", "/bo/posts")
   await connectDB()
 
   const counts = Object.fromEntries(

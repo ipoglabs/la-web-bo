@@ -1,40 +1,28 @@
 "use server";
 
-import { cookies } from "next/headers";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 import { Types } from "mongoose";
+import { requireAdmin, logAdminAction, MAX_REASON } from "@/lib/adminGuard";
+import type { AuditAction } from "@/models/adminAuditLog";
 
-function isAllowedToModeratePosts(role?: string) {
-  return ["super_admin", "admin", "moderator"].includes(String(role));
-}
+type Status = "active" | "off" | "expired" | "rejected";
 
-const MAX_REASON = 500;
+const ACTION: Record<Status, AuditAction> = {
+  active: "post.approve",
+  off: "post.pause",
+  expired: "post.expire",
+  rejected: "post.reject",
+};
 
-export async function updatePostStatus(
-  postId: string,
-  status: "active" | "off" | "expired" | "rejected",
-  reason?: string
-) {
+export async function updatePostStatus(postId: string, status: Status, reason?: string) {
   try {
-    if (!Types.ObjectId.isValid(postId)) {
-      return { ok: false, error: "Invalid post id" };
-    }
+    if (!(status in ACTION)) return { ok: false, error: "Invalid status" };
+    if (!Types.ObjectId.isValid(postId)) return { ok: false, error: "Invalid post id" };
 
-    // ✅ MUST await cookies() in Server Actions
-    const cookieStore = await cookies();
-    const token = cookieStore.get(ADMIN_COOKIE)?.value;
-
-    if (!token) {
-      return { ok: false, error: "Not authenticated" };
-    }
-
-    const session = verifyAdminJwt(token);
-
-    if (!session || !isAllowedToModeratePosts(session.role)) {
-      return { ok: false, error: "Forbidden" };
-    }
+    const guard = await requireAdmin("posts.moderate");
+    if (!guard.ok) return guard;
+    const { admin } = guard;
 
     const rejectionReason = reason?.trim().slice(0, MAX_REASON) || "";
     if (status === "rejected" && !rejectionReason) {
@@ -43,21 +31,33 @@ export async function updatePostStatus(
 
     await connectDB();
 
+    // Suspension is an admin decision; moderators can't quietly re-approve a suspended ad.
+    const current = await Post.findById(postId).select("status isSuspended name adsId").lean();
+    if (!current) return { ok: false, error: "Post not found" };
+    if (current.isSuspended && status === "active" && admin.role === "moderator") {
+      return { ok: false, error: "This ad was suspended by an admin. Ask an admin to review it." };
+    }
+
     // A rejection carries a reason for the seller; any other status clears it.
     const update =
       status === "rejected"
         ? { $set: { status, rejectionReason, updatedAt: new Date() } }
         : { $set: { status, updatedAt: new Date() }, $unset: { rejectionReason: 1 } };
 
-    const updated = await Post.findByIdAndUpdate(postId, update, { new: true });
+    await Post.updateOne({ _id: postId }, update);
 
-    if (!updated) {
-      return { ok: false, error: "Post not found" };
-    }
+    await logAdminAction(admin, {
+      action: ACTION[status],
+      targetType: "post",
+      targetId: postId,
+      targetLabel: [current.adsId, current.name].filter(Boolean).join(" · ") || undefined,
+      reason: rejectionReason || undefined,
+      meta: { from: current.status, to: status },
+    });
 
     return { ok: true };
   } catch (e) {
     console.error("updatePostStatus error:", e);
-    return { ok: false, error: e instanceof Error ? e.message : "Update failed" };
+    return { ok: false, error: "Update failed" };
   }
 }

@@ -2,44 +2,49 @@
 
 import connectDB from "@/lib/db"
 import Post from "@/models/post"
-import { cookies } from "next/headers"
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth"
 import { Types } from "mongoose"
+import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard"
 
-const ALLOWED = ["super_admin", "admin"]
+export async function suspendPost(postId: string, reason: string) {
+  try {
+    if (!Types.ObjectId.isValid(postId)) return { ok: false, error: "Invalid post id" }
 
-export async function suspendPost(postId: string) {
+    const guard = await requireAdmin("posts.suspend")
+    if (!guard.ok) return guard
+    const { admin } = guard
 
-  const cookieStore = await cookies()
-  const token = cookieStore.get(ADMIN_COOKIE)?.value || ""
-  const session = token ? verifyAdminJwt(token) : null
+    const why = cleanReason(reason)
+    if (!why) return { ok: false, error: `Write a reason (at least ${MIN_REASON} characters) for the audit log.` }
 
-  if (!session || !ALLOWED.includes(session.role))
-    return { ok: false, error: "Forbidden" }
+    await connectDB()
 
-  if (!Types.ObjectId.isValid(postId))
-    return { ok: false, error: "Invalid post id" }
+    const post = await Post.findByIdAndUpdate(
+      postId,
+      {
+        isSuspended: true,
+        suspendedAt: new Date(),
+        suspendedBy: new Types.ObjectId(admin.adminId),
+        status: "off",
+      },
+      { new: false },
+    )
+      .select("status name adsId")
+      .lean()
 
-  await connectDB()
+    if (!post) return { ok: false, error: "Post not found" }
 
-  const adminId =
-    session.adminId && Types.ObjectId.isValid(session.adminId)
-      ? new Types.ObjectId(session.adminId)
-      : undefined
+    await logAdminAction(admin, {
+      action: "post.suspend",
+      targetType: "post",
+      targetId: postId,
+      targetLabel: [post.adsId, post.name].filter(Boolean).join(" · ") || undefined,
+      reason: why,
+      meta: { from: post.status, to: "off" },
+    })
 
-  const post = await Post.findByIdAndUpdate(
-    postId,
-    {
-      isSuspended: true,
-      suspendedAt: new Date(),
-      ...(adminId && { suspendedBy: adminId }),
-      status: "off",
-    },
-    { new: true }
-  )
-
-  if (!post)
-    return { ok: false, error: "Post not found" }
-
-  return { ok: true }
+    return { ok: true }
+  } catch (e) {
+    console.error("suspendPost error:", e)
+    return { ok: false, error: "Suspend failed" }
+  }
 }

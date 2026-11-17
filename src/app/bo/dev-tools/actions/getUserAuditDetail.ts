@@ -2,6 +2,7 @@
 
 import { Types } from "mongoose";
 import connectDB from "@/lib/db";
+import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import DevToolsActivityLog from "@/models/devtools/DevToolsActivityLog";
 import DevToolsUser from "@/models/devtools/DevToolsUser";
 import DevToolsAlert from "@/models/devtools/DevToolsAlert";
@@ -54,6 +55,9 @@ export async function getUserAuditDetail(
   range: AuditRange = "7d"
 ): Promise<DevToolsAuditDetail> {
   if (!Types.ObjectId.isValid(userId)) return { user: null, entries: [] };
+  const guard = await requireAdmin("devtools.view");
+  if (!guard.ok) return { user: null, entries: [] };
+  await logAdminAction(guard.admin, { action: "devtools.view_user", targetType: "user", targetId: userId, meta: { range } });
   await connectDB();
 
   const uid = new Types.ObjectId(userId);

@@ -1,47 +1,47 @@
 "use server";
 
-import { cookies } from "next/headers";
 import connectDB from "@/lib/db";
 import User from "@/models/user";
-import { ADMIN_COOKIE, verifyAdminJwt } from "@/lib/adminAuth";
 import { Types } from "mongoose";
+import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard";
 
-const ALLOWED = ["super_admin", "admin"];
-
-export async function suspendUser(userId: string, suspend: boolean) {
+export async function suspendUser(userId: string, suspend: boolean, reason: string) {
   try {
-    const token = (await cookies()).get(ADMIN_COOKIE)?.value || "";
-    const session = token ? verifyAdminJwt(token) : null;
+    if (!Types.ObjectId.isValid(userId)) return { ok: false, error: "Invalid user id" };
 
-    if (!session || !ALLOWED.includes(session.role))
-      return { ok: false, error: "Forbidden" };
+    const guard = await requireAdmin("users.suspend");
+    if (!guard.ok) return guard;
+    const { admin } = guard;
 
-    if (!Types.ObjectId.isValid(userId))
-      return { ok: false, error: "Invalid user id" };
+    const why = cleanReason(reason);
+    if (!why) return { ok: false, error: `Write a reason (at least ${MIN_REASON} characters) for the audit log.` };
 
     await connectDB();
 
     const user = await User.findById(userId);
     if (!user) return { ok: false, error: "User not found" };
+    if (user.accountStatus === "Deleted") return { ok: false, error: "This account is deleted." };
 
     if (!Array.isArray(user.audit)) user.audit = [];
 
-    const adminId =
-      session.adminId && Types.ObjectId.isValid(session.adminId)
-        ? new Types.ObjectId(session.adminId)
-        : undefined;
-
     user.isSuspended = suspend;
     user.accountStatus = suspend ? "Suspended" : "Active";
-
     user.audit.push({
       action: suspend ? "suspend" : "activate",
-      by: adminId,
+      by: new Types.ObjectId(admin.adminId),
       byModel: "AdminUser",
       at: new Date(),
     });
 
     await user.save();
+
+    await logAdminAction(admin, {
+      action: suspend ? "user.suspend" : "user.unsuspend",
+      targetType: "user",
+      targetId: userId,
+      targetLabel: user.email || user.fullName,
+      reason: why,
+    });
 
     return { ok: true };
   } catch (e) {

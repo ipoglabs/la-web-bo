@@ -1,6 +1,7 @@
 "use server";
 
 import connectDB from "@/lib/db";
+import { requireAdmin } from "@/lib/adminGuard";
 import DevToolsUser from "@/models/devtools/DevToolsUser";
 import type { DevToolsDeletedUser } from "./types";
 
@@ -24,6 +25,7 @@ type DeletedUserLean = {
  * listings/chat history via getDeletedUserData.
  */
 export async function listDeletedUsers(): Promise<DevToolsDeletedUser[]> {
+  if (!(await requireAdmin("devtools.view")).ok) return [];
   await connectDB();
 
   const users = await DevToolsUser.find({ isDeleted: true })

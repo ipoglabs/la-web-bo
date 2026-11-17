@@ -5,10 +5,13 @@
 //   node --env-file=.env.local scripts/reset-admin-password.mjs <employeeId|email>
 //
 // The new password is prompted for (hidden) and never stored in plain text.
+// Resetting also unlocks the account, signs out all its sessions, and writes
+// an entry to the audit log.
 
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import readline from "node:readline";
+import os from "node:os";
 
 const { MONGODB_URI, MONGODB_DB } = process.env;
 if (!MONGODB_URI) {
@@ -49,7 +52,7 @@ const admins = mongoose.connection.db.collection("adminusers");
 try {
   if (arg === "--list") {
     const rows = await admins
-      .find({}, { projection: { employeeId: 1, email: 1, firstName: 1, lastName: 1, role: 1, isActive: 1 } })
+      .find({}, { projection: { employeeId: 1, email: 1, firstName: 1, lastName: 1, role: 1, isActive: 1, lastLoginAt: 1 } })
       .sort({ employeeId: 1 })
       .toArray();
     console.table(rows.map(({ _id, ...r }) => r));
@@ -61,18 +64,36 @@ try {
       process.exitCode = 1;
     } else {
       console.log(`Account: ${admin.employeeId} · ${admin.email} · ${admin.role} · active=${admin.isActive}`);
-      const pw = await promptHidden("New password (min 8 chars): ");
+      const pw = await promptHidden("New password (12+ chars, upper, lower, number): ");
       const pw2 = await promptHidden("Repeat new password: ");
-      if (pw.length < 8 || pw !== pw2) {
-        console.error("Passwords too short or don't match. Nothing changed.");
+      const weak = pw.length < 12 || !/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/\d/.test(pw);
+      if (weak || pw !== pw2) {
+        console.error("Password too weak or doesn't match. Nothing changed.");
         process.exitCode = 1;
       } else {
         const ok = await prompt(`Reset password for ${admin.employeeId}? (yes/no) `);
         if (ok.trim().toLowerCase() !== "yes") {
           console.log("Aborted. Nothing changed.");
         } else {
-          const hash = await bcrypt.hash(pw, 10);
-          await admins.updateOne({ _id: admin._id }, { $set: { password: hash, updatedAt: new Date() } });
+          const hash = await bcrypt.hash(pw, 12);
+          const now = new Date();
+          await admins.updateOne(
+            { _id: admin._id },
+            {
+              $set: { password: hash, passwordChangedAt: now, failedLoginCount: 0, updatedAt: now },
+              $unset: { lockedUntil: 1 },
+              $inc: { tokenVersion: 1 },
+            },
+          );
+          await mongoose.connection.db.collection("adminauditlogs").insertOne({
+            actorEmail: `script:${os.userInfo().username}@${os.hostname()}`,
+            actorRole: "script",
+            action: "auth.password_reset",
+            targetType: "admin",
+            targetId: String(admin._id),
+            targetLabel: `${admin.employeeId} · ${admin.email}`,
+            createdAt: now,
+          });
           console.log(`Password updated. Log in at /bo-login with Employee ID ${admin.employeeId}.`);
         }
       }

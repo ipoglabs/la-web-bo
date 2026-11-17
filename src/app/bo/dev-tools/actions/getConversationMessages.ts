@@ -2,6 +2,7 @@
 
 import { Types } from "mongoose";
 import connectDB from "@/lib/db";
+import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import DevToolsMessage from "@/models/devtools/DevToolsMessage";
 import DevToolsConversation from "@/models/devtools/DevToolsConversation";
 import type { DevToolsConversationDetail } from "./types";
@@ -27,6 +28,10 @@ type ConversationLean = {
  * conversation — gated by the /bo admin session, see getDeletedUserData.ts. */
 export async function getConversationMessages(conversationId: string): Promise<DevToolsConversationDetail> {
   if (!Types.ObjectId.isValid(conversationId)) return { conversation: null, messages: [] };
+  // Private messages between users — super admin only, and every read is logged.
+  const guard = await requireAdmin("devtools.view");
+  if (!guard.ok) return { conversation: null, messages: [] };
+  await logAdminAction(guard.admin, { action: "devtools.view_conversation", targetType: "conversation", targetId: conversationId });
   await connectDB();
 
   const [convo, messages] = await Promise.all([
