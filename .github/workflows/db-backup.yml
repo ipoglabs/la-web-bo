@@ -1,0 +1,67 @@
+# Nightly encrypted backup of the live database (lokalads-staging).
+#
+# The backup is encrypted with scripts/backup-public-key.pem before it is
+# uploaded; only the private key (kept by the owner, never in GitHub) can open
+# it. This repo is public, so anyone can download the files, but not read them.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   MONGODB_BACKUP_URI    required: connection string, ideally a READ-ONLY Atlas user
+#   ROLLBAR_SERVER_TOKEN  optional: if set, a failed backup also raises a Rollbar alert
+#
+# Restore / monthly drill: see scripts/restore-backup.mjs.
+name: Database backup
+
+on:
+  schedule:
+    - cron: "30 20 * * *" # 02:00 IST every night
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Back up and encrypt
+        env:
+          MONGODB_BACKUP_URI: ${{ secrets.MONGODB_BACKUP_URI }}
+        run: |
+          if [ -z "$MONGODB_BACKUP_URI" ]; then
+            echo "::error::MONGODB_BACKUP_URI secret is not set"; exit 1
+          fi
+          node scripts/backup-db.mjs --out backups
+          echo "BACKUP_FILE=$(ls backups/*.lkbk)" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_number }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          compression-level: 0 # already compressed + encrypted
+          if-no-files-found: error
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          ROLLBAR_SERVER_TOKEN: ${{ secrets.ROLLBAR_SERVER_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$ROLLBAR_SERVER_TOKEN" ]; then echo "No ROLLBAR_SERVER_TOKEN; GitHub's failure email is the only alert."; exit 0; fi
+          curl -sS -X POST https://api.rollbar.com/api/1/item/ \
+            -H "X-Rollbar-Access-Token: $ROLLBAR_SERVER_TOKEN" -H "content-type: application/json" \
+            -d "{\"data\":{\"environment\":\"production\",\"level\":\"critical\",\"context\":\"db-backup\",\"body\":{\"message\":{\"body\":\"Nightly database backup FAILED: $RUN_URL\"}}}}"
