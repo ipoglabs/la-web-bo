@@ -7,7 +7,8 @@ import { useState, useTransition } from "react"
 import { updatePostStatus } from "../../actions/updatePostStatus"
 import { suspendPost } from "../../actions/suspendPost"
 
-type ActionResult = { ok: boolean; error?: string }
+type SellerNotice = { sent: boolean; skipped?: string; failed?: string }
+type ActionResult = { ok: boolean; error?: string; seller?: SellerNotice }
 
 export default function AdminPostActions({
   postId,
@@ -27,6 +28,7 @@ export default function AdminPostActions({
   const [error, setError] = useState("")
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState("")
+  const [notice, setNotice] = useState<{ tone: "ok" | "warn"; text: string } | null>(null)
   const router = useRouter()
 
   if (!canModerate && !canSuspend) return null
@@ -34,6 +36,7 @@ export default function AdminPostActions({
   const act = (fn: () => Promise<ActionResult>) =>
     start(async () => {
       setError("")
+      setNotice(null)
       const res = await fn()
       if (!res?.ok) {
         setError(res?.error || "Action failed")
@@ -41,6 +44,15 @@ export default function AdminPostActions({
       }
       setRejecting(false)
       setReason("")
+      if (res.seller) {
+        setNotice(
+          res.seller.sent
+            ? { tone: "ok", text: "Rejected. The seller has been emailed the reason." }
+            : res.seller.failed
+              ? { tone: "warn", text: `Rejected, but the seller could NOT be emailed (${res.seller.failed}). They'll still see the reason under My Ads. This has been reported.` }
+              : { tone: "warn", text: `Rejected. No email sent: ${res.seller.skipped}. They'll see the reason under My Ads.` },
+        )
+      }
       router.refresh()
     })
 
@@ -105,7 +117,7 @@ export default function AdminPostActions({
       {rejecting && (
         <div className="space-y-2">
           <label htmlFor="reject-reason" className="text-sm font-medium">
-            Reason (shown to the seller)
+            Reason (emailed to the seller and shown under their My Ads)
           </label>
           <Textarea
             id="reject-reason"
@@ -130,6 +142,9 @@ export default function AdminPostActions({
       )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {notice && (
+        <p className={`text-sm ${notice.tone === "ok" ? "text-green-700" : "text-amber-700"}`}>{notice.text}</p>
+      )}
 
     </div>
   )

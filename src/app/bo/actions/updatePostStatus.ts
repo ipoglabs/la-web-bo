@@ -6,6 +6,7 @@ import { Types } from "mongoose";
 import { requireAdmin, logAdminAction, MAX_REASON } from "@/lib/adminGuard";
 import type { AuditAction } from "@/models/adminAuditLog";
 import { reportError } from "@/lib/errorReport";
+import { notifySellerOfRejection, type NotifyResult } from "@/lib/sellerNotify";
 
 type Status = "active" | "off" | "expired" | "rejected";
 
@@ -40,10 +41,12 @@ export async function updatePostStatus(postId: string, status: Status, reason?: 
     }
 
     // A rejection carries a reason for the seller; any other status clears it.
+    // Every change clears rejectionEmailSentAt, so a later re-rejection is
+    // emailed again (la-web sends at most once per rejection).
     const update =
       status === "rejected"
-        ? { $set: { status, rejectionReason, updatedAt: new Date() } }
-        : { $set: { status, updatedAt: new Date() }, $unset: { rejectionReason: 1 } };
+        ? { $set: { status, rejectionReason, updatedAt: new Date() }, $unset: { rejectionEmailSentAt: 1 } }
+        : { $set: { status, updatedAt: new Date() }, $unset: { rejectionReason: 1, rejectionEmailSentAt: 1 } };
 
     await Post.updateOne({ _id: postId }, update);
 
@@ -56,7 +59,12 @@ export async function updatePostStatus(postId: string, status: Status, reason?: 
       meta: { from: current.status, to: status },
     });
 
-    return { ok: true };
+    // Tell the seller. The rejection itself already succeeded, so a failed
+    // email is reported to the moderator, not treated as a failed action.
+    let seller: NotifyResult | undefined;
+    if (status === "rejected") seller = await notifySellerOfRejection(postId);
+
+    return { ok: true, seller };
   } catch (e) {
     await reportError(e, { where: "action:updatePostStatus" });
     return { ok: false, error: "Update failed" };
