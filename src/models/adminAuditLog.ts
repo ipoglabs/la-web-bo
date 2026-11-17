@@ -8,7 +8,7 @@ export const AUDIT_ACTIONS = [
   "auth.login_failed",
   "auth.locked",
   "auth.logout",
-  "auth.password_reset", // written by scripts/reset-admin-password.mjs
+  "auth.password_reset", // by a Super Admin from Staff, or scripts/reset-admin-password.mjs
   "auth.password_change", // staff changed their own password
   "auth.2fa_enabled",
   "auth.2fa_failed",
@@ -20,6 +20,7 @@ export const AUDIT_ACTIONS = [
   "staff.activate",
   "staff.deactivate",
   "staff.2fa_reset",
+  "staff.unlock",
   // end users
   "user.suspend",
   "user.unsuspend",

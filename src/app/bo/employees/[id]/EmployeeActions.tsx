@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +13,7 @@ import {
 import { changeEmployeeRole } from "../actions/changeRole"
 import { toggleEmployeeStatus } from "../actions/toggleStatus"
 import { resetEmployeeTwoFactor } from "../actions/resetTwoFactor"
+import { resetEmployeePassword, unlockEmployee } from "../actions/staffAccess"
 
 function askReason(question: string): string | null {
   const r = window.prompt(`${question}\n\nReason (saved to the audit log, min 5 characters):`)
@@ -32,6 +33,9 @@ export default function EmployeeActions({
   canChangeRole,
   canToggleStatus,
   canResetTwoFactor = false,
+  canManageAccess = false,
+  isLocked = false,
+  employeeLabel = "",
 }: {
   id: string
   role: string
@@ -40,6 +44,9 @@ export default function EmployeeActions({
   canChangeRole: boolean
   canToggleStatus: boolean
   canResetTwoFactor?: boolean
+  canManageAccess?: boolean
+  isLocked?: boolean
+  employeeLabel?: string
 }) {
   const [pending, start] = useTransition()
   const router = useRouter()
@@ -80,7 +87,61 @@ export default function EmployeeActions({
     })
   }
 
-  if (!canChangeRole && !canToggleStatus && !canResetTwoFactor) return null
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const onUnlock = () => {
+    const reason = askReason("Unlock this account? Check it was really them getting the password or code wrong.")
+    if (!reason) return
+    start(async () => {
+      const res = await unlockEmployee(id, reason)
+      if (!res.ok) alert(res.error)
+      else router.refresh()
+    })
+  }
+
+  const onResetPassword = () => {
+    const reason = askReason(
+      "Reset this person's password? Confirm it's really them asking (call them on a number you already have). " +
+        "They are signed out, and must choose their own password at next sign-in. Two-factor stays on.",
+    )
+    if (!reason) return
+    start(async () => {
+      const res = await resetEmployeePassword(id, reason)
+      if (!res.ok) alert(res.error)
+      else {
+        setCopied(false)
+        setTempPassword(res.tempPassword)
+        router.refresh()
+      }
+    })
+  }
+
+  if (tempPassword) {
+    return (
+      <div className="w-full max-w-sm space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+        <p>
+          <b>Temporary password for {employeeLabel}</b>. It is shown only once. Give it to them in person or by phone,
+          not in the same chat as their Employee ID.
+        </p>
+        <code className="block select-all rounded bg-white p-2 font-mono text-base">{tempPassword}</code>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigator.clipboard.writeText(tempPassword).then(() => setCopied(true))}
+          >
+            {copied ? "Copied" : "Copy"}
+          </Button>
+          <Button size="sm" onClick={() => setTempPassword(null)}>
+            Done, hide it
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!canChangeRole && !canToggleStatus && !canResetTwoFactor && !canManageAccess) return null
 
   return (
     <div className="flex flex-wrap gap-3">
@@ -102,6 +163,18 @@ export default function EmployeeActions({
       {canToggleStatus && (
         <Button variant={isActive ? "destructive" : "outline"} disabled={pending} onClick={onToggleStatus}>
           {isActive ? "Deactivate" : "Activate"}
+        </Button>
+      )}
+
+      {canManageAccess && isLocked && (
+        <Button variant="outline" disabled={pending} onClick={onUnlock}>
+          Unlock
+        </Button>
+      )}
+
+      {canManageAccess && (
+        <Button variant="outline" disabled={pending} onClick={onResetPassword}>
+          Reset password
         </Button>
       )}
 

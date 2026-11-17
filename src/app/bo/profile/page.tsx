@@ -30,7 +30,7 @@ export default async function AdminProfilePage() {
         <h2 className="text-lg font-semibold">Change password</h2>
         <ChangePasswordForm />
         <p className="text-xs text-muted-foreground">
-          Forgot your password? Ask a Super Admin to reset it. You&apos;ll be asked to choose a new one when you next
+          Forgot your password or locked out? Ask a Super Admin (or your Admin) to reset or unlock it from the Staff page. You&apos;ll be asked to choose a new one when you next
           sign in.
         </p>
       </div>
