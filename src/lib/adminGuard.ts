@@ -7,7 +7,7 @@ import AdminAuditLog, { type AuditAction, type AuditTargetType } from "@/models/
 import { ADMIN_COOKIE, verifyAdminJwt, type AdminSession } from "@/lib/adminAuth";
 import { hasPerm, type Permission } from "@/lib/adminPermissions";
 
-export type AdminContext = AdminSession & { name: string };
+export type AdminContext = AdminSession & { name: string; mustChangePassword: boolean };
 
 /** Verifies the cookie AND re-reads the account, so deactivating someone,
  *  changing their role or resetting their password takes effect on their very
@@ -19,7 +19,7 @@ export async function getAdmin(): Promise<AdminContext | null> {
 
   await connectDB();
   const admin = await AdminUser.findById(session.adminId)
-    .select("firstName lastName email role country isActive tokenVersion")
+    .select("firstName lastName email role country isActive tokenVersion mustChangePassword")
     .lean();
 
   if (!admin || !admin.isActive) return null;
@@ -32,6 +32,7 @@ export async function getAdmin(): Promise<AdminContext | null> {
     country: admin.country,
     tv: admin.tokenVersion ?? 0,
     name: `${admin.firstName} ${admin.lastName}`.trim(),
+    mustChangePassword: Boolean(admin.mustChangePassword),
   };
 }
 
@@ -43,6 +44,8 @@ type Guard =
 export async function requireAdmin(perm?: Permission): Promise<Guard> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "Your session has ended. Please sign in again." };
+  // Someone else knows a temporary password: nothing but changing it is allowed.
+  if (perm && admin.mustChangePassword) return { ok: false, error: "Set your own password first (My Profile)." };
   if (perm && !hasPerm(admin.role, perm)) return { ok: false, error: "You don't have permission to do this." };
   return { ok: true, admin };
 }

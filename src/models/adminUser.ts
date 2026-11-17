@@ -32,6 +32,8 @@ export interface IAdminUser {
   lastLoginAt?: Date;
   lastLoginIp?: string;
   passwordChangedAt?: Date;
+  /** Set when someone else chose the password (new account, reset). Cleared once they pick their own. */
+  mustChangePassword: boolean;
   audit: IAdminUserAudit[];
   createdBy?: mongoose.Types.ObjectId;
   createdAt?: Date;
@@ -93,6 +95,7 @@ const AdminUserSchema = new Schema<IAdminUser>(
     lastLoginAt: Date,
     lastLoginIp: String,
     passwordChangedAt: Date,
+    mustChangePassword: { type: Boolean, default: false },
 
     // ✅ AUDIT TRAIL
     audit: [

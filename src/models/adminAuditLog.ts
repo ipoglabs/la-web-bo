@@ -9,6 +9,7 @@ export const AUDIT_ACTIONS = [
   "auth.locked",
   "auth.logout",
   "auth.password_reset", // written by scripts/reset-admin-password.mjs
+  "auth.password_change", // staff changed their own password
   // staff
   "staff.create",
   "staff.role_change",

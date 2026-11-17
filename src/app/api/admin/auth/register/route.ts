@@ -85,6 +85,7 @@ export async function POST(req: Request) {
       employeeId,
       password: passwordHash,
       passwordChangedAt: new Date(),
+      mustChangePassword: true, // the creator knows it, so it's only temporary
       createdBy: admin.adminId,
       isActive: true,
     });

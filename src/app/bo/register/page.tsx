@@ -110,7 +110,8 @@ export default function AdminRegisterPage() {
         {createdId && (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             Account created. Employee ID: <b>{createdId}</b>. Share the ID and the temporary password with them
-            separately (never in the same message), and ask them to sign in at /bo-login.
+            separately (never in the same message). They&apos;ll be asked to choose their own password the
+            first time they sign in at /bo-login.
           </div>
         )}
 
