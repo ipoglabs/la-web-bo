@@ -29,6 +29,8 @@ export interface IPost {
 
   status?: "pending" | "active" | "rejected" | "off" | "expired" | "closed" | "deleted";
   rejectionReason?: string;
+  /** Set by la-web once the seller is emailed about the current rejection. */
+  rejectionEmailSentAt?: Date;
   expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
@@ -219,6 +221,7 @@ const PostSchema = new Schema<IPost>(
       index: true,
     },
     rejectionReason: { type: String },
+    rejectionEmailSentAt: { type: Date },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },
