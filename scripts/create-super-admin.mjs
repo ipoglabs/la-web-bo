@@ -1,6 +1,9 @@
 // Creates a Super Admin back-office account. Super Admins can't be created from
 // the UI on purpose. This deliberate, offline step needs database credentials.
 //
+// Uses MONGODB_DB from .env.local (the test database). For the LIVE database
+// see scripts/_db.mjs: prefix MONGODB_DB=lokalads-staging and confirm.
+//
 // Usage (from repo root, needs MONGODB_URI in .env.local):
 //   node --env-file=.env.local scripts/create-super-admin.mjs
 //   node --env-file=.env.local scripts/create-super-admin.mjs --promote <employeeId|email>
@@ -13,7 +16,7 @@
 // written only to a private file (mode 600) in your home folder, and the new
 // Super Admin must replace it the first time they sign in.
 
-import mongoose from "mongoose";
+import { connectForScript, disconnect } from "./_db.mjs";
 import bcrypt from "bcryptjs";
 import readline from "node:readline";
 import os from "node:os";
@@ -22,11 +25,6 @@ import crypto from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-const { MONGODB_URI, MONGODB_DB } = process.env;
-if (!MONGODB_URI) {
-  console.error("MONGODB_URI is not set. Run with --env-file=.env.local");
-  process.exit(1);
-}
 
 function ask(question, { hidden = false } = {}) {
   return new Promise((resolve) => {
@@ -54,6 +52,7 @@ const { values: flags } = parseArgs({
   options: {
     promote: { type: "string" },
     "temp-password": { type: "boolean", default: false },
+    "confirm-live": { type: "string" },
     first: { type: "string" }, last: { type: "string" }, email: { type: "string" },
     designation: { type: "string" }, country: { type: "string" }, location: { type: "string" },
     age: { type: "string" }, gender: { type: "string" },
@@ -67,13 +66,11 @@ function tempPassword() {
   return `Tmp-${chunk()}-${chunk()}-${crypto.randomInt(10, 99)}A`;
 }
 
-await mongoose.connect(MONGODB_URI, { dbName: MONGODB_DB || undefined });
-const db = mongoose.connection.db;
+const db = await connectForScript({ writes: true });
 const admins = db.collection("adminusers");
 const audit = db.collection("adminauditlogs");
 const counters = db.collection("counters");
 
-console.log(`Database: ${db.databaseName}`);
 
 async function log(action, target, meta) {
   await audit.insertOne({
@@ -173,5 +170,5 @@ try {
   console.error("Error:", e.message);
   process.exitCode = 1;
 } finally {
-  await mongoose.disconnect();
+  await disconnect();
 }
