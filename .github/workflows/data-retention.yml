@@ -1,0 +1,64 @@
+# Nightly data retention on the live database (scripts/retention.mjs).
+# Deletes/anonymises personal data past its retention period, so we keep the
+# privacy-policy promises (closed accounts wiped within 30/60/90 days, UK/SG/IN).
+#
+# Runs an hour after the nightly backup, so a fresh backup always exists first.
+# Manual runs default to REPORT ONLY; choose "apply" to make changes.
+#
+# Secrets: MONGODB_RETENTION_URI (needs write access to lokalads-staging)
+#          ROLLBAR_SERVER_TOKEN (optional, alerts on failure)
+name: Data retention
+
+on:
+  schedule:
+    - cron: "30 21 * * *" # 03:00 IST, after the 02:00 backup
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Make the changes (otherwise report only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-retention
+  cancel-in-progress: false
+
+jobs:
+  retention:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Apply retention rules
+        env:
+          MONGODB_RETENTION_URI: ${{ secrets.MONGODB_RETENTION_URI }}
+          MONGODB_DB: lokalads-staging
+          RETENTION_CONFIRM_LIVE: lokalads-staging
+          APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
+        run: |
+          if [ -z "$MONGODB_RETENTION_URI" ]; then
+            echo "::error::MONGODB_RETENTION_URI secret is not set"; exit 1
+          fi
+          if [ "$APPLY" = "true" ]; then node scripts/retention.mjs --apply; else node scripts/retention.mjs; fi
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          ROLLBAR_SERVER_TOKEN: ${{ secrets.ROLLBAR_SERVER_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$ROLLBAR_SERVER_TOKEN" ]; then echo "No ROLLBAR_SERVER_TOKEN; GitHub's failure email is the only alert."; exit 0; fi
+          curl -sS -X POST https://api.rollbar.com/api/1/item/ \
+            -H "X-Rollbar-Access-Token: $ROLLBAR_SERVER_TOKEN" -H "content-type: application/json" \
+            -d "{\"data\":{\"environment\":\"production\",\"level\":\"critical\",\"context\":\"data-retention\",\"body\":{\"message\":{\"body\":\"Nightly data retention FAILED: $RUN_URL\"}}}}"

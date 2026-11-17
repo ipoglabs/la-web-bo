@@ -30,6 +30,15 @@ const DUTIES: Record<AdminRole, Duty[]> = {
       ],
     },
     {
+      title: "Data retention (privacy policy)",
+      items: [
+        "A nightly job (GitHub → Actions → Data retention) deletes personal data on schedule. Closed accounts are wiped 28 days after closing (policy: UK 30, SG 60, India 90 days). Signed-out sessions go after 30 days, idle ones after 60; user activity after 1 year; staff audit log after 2 years; reporters' emails on resolved reports after 1 year. Backups expire after 30 days. Donation records are kept as tax law requires.",
+        "Closing an account (Users → Delete) removes name, email and phone at once; a snapshot is kept 28 days for support and legal requests, then wiped. It can't be undone after that.",
+        "If the job fails or stops with a \"safety brake\" (too many accounts at once), find out why before raising the limit. Never switch the job off to keep data: that breaks the privacy policy.",
+        "A user asking for their data to be deleted: close the account (or ask them to use Delete account on the site). That starts the clock; no other action is needed.",
+      ],
+    },
+    {
       title: "Oversight",
       items: [
         "Weekly: skim the audit log for failed logins/lock-outs, wrong two-factor codes, recovery-code sign-ins, deletes, role changes and Dev Tools access.",
@@ -44,7 +53,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Never change or lose ADMIN_2FA_KEY: it decrypts everyone's authenticator setup. If it changes, every account has to have two-factor reset.",
         "Read every Rollbar alert email the same day. \"critical\" (sign-in or audit-log failures) means drop other work; look at it now.",
         "Monthly: press \"Send test alert\" on My Profile and check the email arrives. Silence is only good news if alerts work.",
-        "The live database is backed up every night (GitHub → Actions → Database backup), encrypted, kept 90 days. A failed backup emails you; treat it like an outage.",
+        "The live database is backed up every night (GitHub → Actions → Database backup), encrypted, kept 30 days. A failed backup emails you; treat it like an outage.",
         "Monthly restore drill: download last night's backup and run scripts/restore-backup.mjs into a scratch database with --verify-against and --drop-after. A backup you haven't restored is a hope, not a backup.",
         "Keep the backup private key (lokalads-backup-private-key.pem) in two places: the password manager and offline. Without it every backup is unreadable. Never put it in GitHub, Vercel or chat.",
         "Lead incident response: contain, preserve the audit log, notify affected users if required by law.",

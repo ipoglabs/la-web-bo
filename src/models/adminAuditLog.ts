@@ -22,6 +22,7 @@ export const AUDIT_ACTIONS = [
   "staff.2fa_reset",
   "staff.unlock",
   "system.test_alert",
+  "system.retention", // nightly scripts/retention.mjs summary (counts only)
   // end users
   "user.suspend",
   "user.unsuspend",
