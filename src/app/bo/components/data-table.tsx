@@ -32,11 +32,15 @@ import { IconChevronLeft, IconChevronRight, IconLayoutColumns } from "@tabler/ic
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  /** Rows are already one page from the server (see ListControls): no
+   *  in-browser search or paging. */
+  serverPaged?: boolean
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  serverPaged = false,
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [pagination, setPagination] = React.useState({
@@ -54,8 +58,9 @@ export function DataTable<TData, TValue>({
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(serverPaged
+      ? {}
+      : { getFilteredRowModel: getFilteredRowModel(), getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
   })
 
@@ -63,12 +68,16 @@ export function DataTable<TData, TValue>({
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <Input
-          placeholder="Search posts..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
+        {serverPaged ? (
+          <span />
+        ) : (
+          <Input
+            placeholder="Search..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="max-w-sm"
+          />
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -142,7 +151,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-end gap-2">
+      <div className={`flex items-center justify-end gap-2 ${serverPaged ? "hidden" : ""}`}>
         <Button
           variant="outline"
           size="icon"

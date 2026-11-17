@@ -6,6 +6,8 @@ import ViewReportModal from "./ViewReportModal"
 import ReviewReportButtons from "./ReviewReportButtons"
 import { requireAdminPage } from "@/lib/adminGuard"
 import { hasPerm } from "@/lib/adminPermissions"
+import { PAGE_SIZE, pageWindow, parsePage, searchFilter } from "@/lib/listQuery"
+import { ListPager, ListSearch } from "../../components/ListControls"
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "text-amber-700 bg-amber-50",
@@ -14,15 +16,27 @@ const STATUS_STYLE: Record<string, string> = {
   dismissed: "text-slate-500 bg-slate-100",
 }
 
-export default async function AdReportsPage() {
+export default async function AdReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>
+}) {
 
   const admin = await requireAdminPage("reports.view", "/bo/reports/posts")
   const canReview = hasPerm(admin.role, "reports.review")
+  const sp = await searchParams
 
   await connectDB()
 
-  const reports = await AdReport.find({})
-    .sort({ createdAt: -1 })
+  const filter = searchFilter(sp.q, ["ticketId", "adTitle", "sellerName", "adId"])
+  const total = await AdReport.countDocuments(filter)
+  const w = pageWindow(parsePage(sp.page), total)
+  const params = { q: sp.q }
+
+  const reports = await AdReport.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .skip(w.skip)
+    .limit(PAGE_SIZE)
     .lean()
 
   // AdReport.adId is the listing's display id (Post.adsId), not the Mongo
@@ -56,6 +70,8 @@ export default async function AdReportsPage() {
       <p className="text-sm text-muted-foreground">
         Reports submitted by real users from the live site (POST /api/reports) — bo only reviews these.
       </p>
+
+      <ListSearch basePath="/bo/reports/posts" params={params} placeholder="Search ticket, ad title, seller or ad ID" />
 
       <div className="bg-white rounded-xl border shadow overflow-x-auto">
 
@@ -130,6 +146,8 @@ export default async function AdReportsPage() {
         </table>
 
       </div>
+
+      <ListPager basePath="/bo/reports/posts" params={params} page={w.current} pages={w.pages} from={w.from} to={w.to} total={total} />
 
     </div>
   )

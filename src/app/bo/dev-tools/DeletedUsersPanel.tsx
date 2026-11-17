@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDebounced } from "@/components/hooks/useDebounced";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,13 @@ const statusIntent: Record<string, "success" | "warning" | "danger" | "neutral">
 };
 
 export default function DeletedUsersPanel() {
-  const { data: users, error: usersError, refresh: refreshUsers } = useAsyncList(listDeletedUsers, []);
   const [filter, setFilter] = useState("");
+  const query = useDebounced(filter.trim());
+  // Searched in the database; returns at most LOOKUP_LIMIT newest matches.
+  const { data: users, error: usersError, refresh: refreshUsers } = useAsyncList(
+    () => listDeletedUsers(query),
+    [query],
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const {
     data,
@@ -55,19 +61,7 @@ export default function DeletedUsersPanel() {
     setMessagesError(null);
   }, [selectedId]);
 
-  const filtered = useMemo(() => {
-    if (!users) return [];
-    const q = filter.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
-      (u) =>
-        u.userId.toLowerCase().includes(q) ||
-        u.deleteFeedback?.toLowerCase().includes(q) ||
-        u.originalFullName?.toLowerCase().includes(q) ||
-        u.originalEmail?.toLowerCase().includes(q) ||
-        u.originalPrimaryNumber?.toLowerCase().includes(q)
-    );
-  }, [users, filter]);
+  const filtered = users ?? [];
 
   const selected = users?.find((u) => u.id === selectedId) ?? null;
 

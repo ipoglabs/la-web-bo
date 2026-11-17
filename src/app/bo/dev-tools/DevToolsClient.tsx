@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useDebounced } from "@/components/hooks/useDebounced";
+import { LOOKUP_LIMIT } from "@/lib/listQuery";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,22 +25,14 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export default function DevToolsClient() {
   const [tab, setTab] = useState<"users" | "deleted" | "activity">("users");
-  const { data: users, error, refresh } = useAsyncList(listUsers, []);
   const [filter, setFilter] = useState("");
+  const query = useDebounced(filter.trim());
+  // Searched in the database; returns at most LOOKUP_LIMIT newest matches.
+  const { data: users, error, refresh } = useAsyncList(() => listUsers(query), [query]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [auditUserId, setAuditUserId] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!users) return [];
-    const q = filter.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
-      (u) =>
-        u.fullName.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        u.primaryNumber?.toLowerCase().includes(q)
-    );
-  }, [users, filter]);
+  const filtered = users ?? [];
 
   const selected = users?.find((u) => u.id === selectedId) ?? null;
 
@@ -68,8 +62,13 @@ export default function DevToolsClient() {
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter by name, email, or phone…"
+            placeholder="Search by name, email, phone or user ID…"
           />
+          {users?.length === LOOKUP_LIMIT && (
+            <p className="text-xs text-slate-500 -mt-4">
+              Showing the newest {LOOKUP_LIMIT} matches. Type more to narrow it down.
+            </p>
+          )}
 
           <Card className="p-0 divide-y divide-slate-100 overflow-hidden">
             {error ? (
