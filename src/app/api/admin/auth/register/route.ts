@@ -5,6 +5,7 @@ import Counter from "@/models/counter";
 import { hash } from "bcryptjs";
 import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import { canManageRole, checkAdminPassword, isAdminRole } from "@/lib/adminPermissions";
+import { reportError } from "@/lib/errorReport";
 
 interface RegisterBody {
   email?: string;
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, employeeId }, { status: 201 });
   } catch (e) {
-    console.error("BO register failed:", e);
+    await reportError(e, { where: "route:/api/admin/auth/register" });
     return bad("Couldn't create the account.", 500);
   }
 }

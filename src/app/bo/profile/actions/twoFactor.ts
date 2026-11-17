@@ -6,6 +6,7 @@ import AdminUser from "@/models/adminUser";
 import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import { generateTotpSecret, otpauthUri, verifyTotp } from "@/lib/totp";
 import { generateRecoveryCodes, hashRecoveryCode, open, seal } from "@/lib/secretBox";
+import { reportError } from "@/lib/errorReport";
 
 export type SetupStart = { ok: true; qr: string; secret: string } | { ok: false; error: string };
 export type CodesResult = { ok: true; recoveryCodes: string[] } | { ok: false; error: string } | null;
@@ -30,7 +31,7 @@ export async function startTwoFactorSetup(): Promise<SetupStart> {
       secret: secret.match(/.{1,4}/g)!.join(" "), // for typing in by hand
     };
   } catch (e) {
-    console.error("startTwoFactorSetup failed:", e);
+    await reportError(e, { where: "action:startTwoFactorSetup" });
     return { ok: false, error: "Couldn't start setup. Try again." };
   }
 }
@@ -65,7 +66,7 @@ export async function confirmTwoFactorSetup(_prev: CodesResult, form: FormData):
     await logAdminAction(admin, { action: "auth.2fa_enabled", targetType: "admin", targetId: admin.adminId, targetLabel: user.employeeId });
     return { ok: true, recoveryCodes: codes };
   } catch (e) {
-    console.error("confirmTwoFactorSetup failed:", e);
+    await reportError(e, { where: "action:confirmTwoFactorSetup" });
     return { ok: false, error: "Couldn't turn on two-factor. Try again." };
   }
 }
@@ -92,7 +93,7 @@ export async function regenerateRecoveryCodes(_prev: CodesResult, form: FormData
     await logAdminAction(admin, { action: "auth.recovery_codes_regenerated", targetType: "admin", targetId: admin.adminId, targetLabel: user.employeeId });
     return { ok: true, recoveryCodes: codes };
   } catch (e) {
-    console.error("regenerateRecoveryCodes failed:", e);
+    await reportError(e, { where: "action:regenerateRecoveryCodes" });
     return { ok: false, error: "Couldn't create new codes. Try again." };
   }
 }

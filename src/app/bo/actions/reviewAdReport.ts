@@ -4,6 +4,7 @@ import connectDB from "@/lib/db";
 import AdReport from "@/models/adReport";
 import { Types } from "mongoose";
 import { requireAdmin, logAdminAction, MAX_REASON } from "@/lib/adminGuard";
+import { reportError } from "@/lib/errorReport";
 
 const STATUSES = ["reviewed", "actioned", "dismissed"] as const;
 
@@ -45,7 +46,7 @@ export async function reviewAdReport(
 
     return { ok: true };
   } catch (e) {
-    console.error("REVIEW AD REPORT ERROR:", e);
+    await reportError(e, { where: "action:reviewAdReport" });
     return { ok: false, error: "Review failed" };
   }
 }

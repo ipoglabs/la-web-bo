@@ -7,6 +7,7 @@ import AdminUser from "@/models/adminUser";
 import { requireAdmin, logAdminAction } from "@/lib/adminGuard";
 import { ADMIN_COOKIE, ADMIN_MAX_AGE, signAdminJwt } from "@/lib/adminAuth";
 import { checkAdminPassword } from "@/lib/adminPermissions";
+import { reportError } from "@/lib/errorReport";
 
 export type ChangePasswordState = { ok: boolean; error?: string } | null;
 
@@ -97,7 +98,7 @@ export async function changeOwnPassword(
 
     return { ok: true };
   } catch (e) {
-    console.error("changeOwnPassword failed:", e);
+    await reportError(e, { where: "action:changeOwnPassword" });
     return { ok: false, error: "Couldn't change your password. Try again." };
   }
 }

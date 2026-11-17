@@ -6,6 +6,7 @@ import AdminUser from "@/models/adminUser";
 import AdminAuditLog, { type AuditAction, type AuditTargetType } from "@/models/adminAuditLog";
 import { ADMIN_COOKIE, verifyAdminJwt, type AdminSession } from "@/lib/adminAuth";
 import { hasPerm, requiresTwoFactor, type Permission } from "@/lib/adminPermissions";
+import { reportError } from "@/lib/errorReport";
 
 export type AdminContext = AdminSession & {
   name: string;
@@ -102,7 +103,7 @@ export async function logAdminAction(
       ...meta,
     });
   } catch (e) {
-    console.error("[audit] FAILED to write audit log", entry.action, entry.targetId, e);
+    await reportError(e, { where: "audit-log-write", level: "critical", extra: { action: entry.action, targetId: entry.targetId } });
   }
 }
 

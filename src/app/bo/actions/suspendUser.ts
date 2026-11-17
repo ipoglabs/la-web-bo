@@ -4,6 +4,7 @@ import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { Types } from "mongoose";
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard";
+import { reportError } from "@/lib/errorReport";
 
 export async function suspendUser(userId: string, suspend: boolean, reason: string) {
   try {
@@ -45,7 +46,7 @@ export async function suspendUser(userId: string, suspend: boolean, reason: stri
 
     return { ok: true };
   } catch (e) {
-    console.error("SUSPEND USER ERROR:", e);
+    await reportError(e, { where: "action:suspendUser" });
     return { ok: false, error: "Suspend failed" };
   }
 }

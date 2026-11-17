@@ -5,6 +5,7 @@ import AdminUser from "@/models/adminUser"
 import { Types } from "mongoose"
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard"
 import { canManageRole } from "@/lib/adminPermissions"
+import { reportError } from "@/lib/errorReport"
 
 export async function toggleEmployeeStatus(employeeId: string, reason: string) {
   try {
@@ -60,7 +61,7 @@ export async function toggleEmployeeStatus(employeeId: string, reason: string) {
 
     return { ok: true }
   } catch (e) {
-    console.error("toggleEmployeeStatus failed:", e)
+    await reportError(e, { where: "action:toggleEmployeeStatus" })
     return { ok: false, error: "Status change failed" }
   }
 }

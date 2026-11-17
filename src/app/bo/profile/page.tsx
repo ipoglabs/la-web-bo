@@ -3,6 +3,7 @@ import { requireAdminPage } from "@/lib/adminGuard";
 import { ROLE_LABELS, ROLE_SUMMARY } from "@/lib/adminPermissions";
 import ChangePasswordForm from "./ChangePasswordForm";
 import TwoFactorSetup, { RegenerateRecoveryCodes } from "./TwoFactorSetup";
+import TestAlertButton from "./TestAlertButton";
 
 export default async function AdminProfilePage() {
   const admin = await requireAdminPage(undefined, "/bo/profile");
@@ -53,6 +54,17 @@ export default async function AdminProfilePage() {
           <TwoFactorSetup />
         )}
       </div>
+
+      {admin.role === "super_admin" && (
+        <div id="alerts" className="bg-white p-6 rounded-xl shadow space-y-3">
+          <h2 className="text-lg font-semibold">Error alerts</h2>
+          <p className="text-sm text-muted-foreground">
+            Server errors in the back office are sent to Rollbar (personal data removed), which emails an alert when a
+            new kind of error appears. Use this to check alerts still reach you.
+          </p>
+          <TestAlertButton />
+        </div>
+      )}
     </div>
   );
 }

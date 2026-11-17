@@ -7,6 +7,7 @@ import Post from "@/models/post";
 import OptionRequest from "@/models/optionRequest";
 import { requireAdminPage } from "@/lib/adminGuard";
 import { hasPerm, ROLE_LABELS, type Permission } from "@/lib/adminPermissions";
+import { reportError } from "@/lib/errorReport";
 
 const NAV: { href: string; label: string; perm?: Permission; badge?: "posts" | "options" }[] = [
   { href: "/bo", label: "Dashboard" },
@@ -75,7 +76,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     ]);
     counts = { posts, options };
   } catch (e) {
-    console.error("bo layout counts failed:", e);
+    await reportError(e, { where: "page:bo-layout-counts", level: "warning" });
   }
 
   return (
