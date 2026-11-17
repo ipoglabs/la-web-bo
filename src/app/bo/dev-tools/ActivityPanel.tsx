@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDebounced } from "@/components/hooks/useDebounced";
 import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -227,8 +228,10 @@ function UserRow({ user, onOpen }: { user: DevToolsUser; onOpen: () => void }) {
 }
 
 export default function ActivityPanel({ initialUserId }: { initialUserId?: string | null }) {
-  const { data: users, error: usersError, refresh: refreshUsers } = useAsyncList(listUsers, []);
   const [filter, setFilter] = useState("");
+  const query = useDebounced(filter.trim());
+  // Searched in the database; returns at most LOOKUP_LIMIT newest matches.
+  const { data: users, error: usersError, refresh: refreshUsers } = useAsyncList(() => listUsers(query), [query]);
   const [selectedId, setSelectedId] = useState<string | null>(initialUserId ?? null);
   const [range, setRange] = useState<AuditRange>("7d");
   const { data: detail, error: detailError, refresh: refreshDetail } = useAsyncList(async () => {
@@ -242,18 +245,7 @@ export default function ActivityPanel({ initialUserId }: { initialUserId?: strin
     if (initialUserId) setSelectedId(initialUserId);
   }, [initialUserId]);
 
-  const filtered = useMemo(() => {
-    if (!users) return [];
-    const q = filter.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
-      (u) =>
-        u.fullName.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        u.primaryNumber?.toLowerCase().includes(q) ||
-        u.userId.toLowerCase().includes(q)
-    );
-  }, [users, filter]);
+  const filtered = users ?? [];
 
   if (selectedId) {
     return (

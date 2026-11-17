@@ -2,6 +2,7 @@
 
 import connectDB from "@/lib/db";
 import { requireAdmin } from "@/lib/adminGuard";
+import { LOOKUP_LIMIT, searchFilter } from "@/lib/listQuery";
 import DevToolsUser from "@/models/devtools/DevToolsUser";
 import type { DevToolsUser as DevToolsUserDTO } from "./types";
 
@@ -22,12 +23,16 @@ type UserLean = {
   createdAt: Date;
 };
 
-/** All users, newest first — super admin only (devtools.view). */
-export async function listUsers(): Promise<DevToolsUserDTO[]> {
+/** Newest users matching `query` (name, email, phone or user ID), at most
+ *  LOOKUP_LIMIT — super admin only (devtools.view). */
+export async function listUsers(query = ""): Promise<DevToolsUserDTO[]> {
   if (!(await requireAdmin("devtools.view")).ok) return [];
   await connectDB();
 
-  const users = await DevToolsUser.find({}).sort({ createdAt: -1 }).lean<UserLean[]>();
+  const users = await DevToolsUser.find(searchFilter(query, ["fullName", "email", "primaryNumber", "userId"]))
+    .sort({ createdAt: -1 })
+    .limit(LOOKUP_LIMIT)
+    .lean<UserLean[]>();
 
   return users.map((user) => ({
     id: String(user._id),

@@ -2,6 +2,7 @@
 
 import connectDB from "@/lib/db";
 import { requireAdmin } from "@/lib/adminGuard";
+import { LOOKUP_LIMIT, searchFilter } from "@/lib/listQuery";
 import DevToolsUser from "@/models/devtools/DevToolsUser";
 import type { DevToolsDeletedUser } from "./types";
 
@@ -18,18 +19,28 @@ type DeletedUserLean = {
 };
 
 /**
- * Deleted (anonymized) accounts, newest-deleted first — gated by the /bo
- * admin session (see bo/layout.tsx). Their email/phone/name are already
+ * Deleted (anonymized) accounts matching `query`, newest-deleted first, at
+ * most LOOKUP_LIMIT — super admin only (devtools.view). Their email/phone/name are already
  * scrubbed (see softDeleteAccount in la-web) — this is a read-only view onto
  * what's left (userId, audit trail, deletion metadata) plus their
  * listings/chat history via getDeletedUserData.
  */
-export async function listDeletedUsers(): Promise<DevToolsDeletedUser[]> {
+export async function listDeletedUsers(query = ""): Promise<DevToolsDeletedUser[]> {
   if (!(await requireAdmin("devtools.view")).ok) return [];
   await connectDB();
 
-  const users = await DevToolsUser.find({ isDeleted: true })
+  const users = await DevToolsUser.find({
+    isDeleted: true,
+    ...searchFilter(query, [
+      "userId",
+      "deleteFeedback",
+      "deletedIdentitySnapshot.fullName",
+      "deletedIdentitySnapshot.email",
+      "deletedIdentitySnapshot.primaryNumber",
+    ]),
+  })
     .sort({ deletedAt: -1 })
+    .limit(LOOKUP_LIMIT)
     .lean<DeletedUserLean[]>();
 
   return users.map((user) => ({

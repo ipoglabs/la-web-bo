@@ -5,10 +5,5 @@ import { DataTable } from "../components/data-table"
 import { columns, type BoUser } from "./columns"
 
 export default function BoUsersClient({ data }: { data: BoUser[] }) {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Users</h1>
-      <DataTable columns={columns} data={data} />
-    </div>
-  )
+  return <DataTable columns={columns} data={data} serverPaged />
 }

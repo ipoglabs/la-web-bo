@@ -6,6 +6,8 @@ import { toClientPost, type LeanPost } from "@/lib/serialize"
 import { BoPost } from "./columns"
 import BoPostsClient from "./BoPostsClient"
 import { requireAdminPage } from "@/lib/adminGuard"
+import { PAGE_SIZE, pageWindow, parsePage, searchFilter } from "@/lib/listQuery"
+import { ListPager, ListSearch } from "../components/ListControls"
 import type { Types } from "mongoose"
 
 type PopulatedOwner = { _id: Types.ObjectId; email?: string };
@@ -27,9 +29,10 @@ const TAB_LABELS: Record<Tab, string> = {
 export default async function BoPostsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>
+  searchParams: Promise<{ status?: string; q?: string; page?: string }>
 }) {
   await requireAdminPage("posts.view", "/bo/posts")
+  const sp = await searchParams
   await connectDB()
 
   const counts = Object.fromEntries(
@@ -40,16 +43,28 @@ export default async function BoPostsPage({
   const total = Object.values(counts).reduce((a, b) => a + b, 0)
 
   // Default to the approval queue when something is waiting.
-  const requested = (await searchParams).status
+  const requested = sp.status
   const tab: Tab = TABS.includes(requested as Tab)
     ? (requested as Tab)
     : (counts.pending ?? 0) > 0 ? "pending" : "all"
 
+  const filter = {
+    ...(tab === "all" ? {} : { status: tab }),
+    ...searchFilter(sp.q, ["name", "adsId"]),
+  }
+  const matching = await Post.countDocuments(filter)
+  const w = pageWindow(parsePage(sp.page), matching)
+
   // Queue is first-in, first-out; other views show the latest changes first.
-  const posts = await Post.find(tab === "all" ? {} : { status: tab })
-    .sort(tab === "pending" ? { updatedAt: 1 } : { updatedAt: -1 })
+  // _id breaks ties so paging never skips or repeats an ad.
+  const posts = await Post.find(filter)
+    .sort(tab === "pending" ? { updatedAt: 1, _id: 1 } : { updatedAt: -1, _id: -1 })
+    .skip(w.skip)
+    .limit(PAGE_SIZE)
     .populate("ownerId", "email")
     .lean<LeanPostWithOwner[]>()
+
+  const params = { status: tab, q: sp.q }
 
   const data: BoPost[] = posts.flatMap((p): BoPost[] => {
     const obj = toClientPost(p as LeanPost)
@@ -100,10 +115,15 @@ export default async function BoPostsPage({
         })}
       </nav>
 
-      {tab === "pending" && data.length === 0 ? (
+      <ListSearch basePath="/bo/posts" params={params} placeholder="Search ad title or ad ID" />
+
+      {tab === "pending" && matching === 0 && !sp.q ? (
         <p className="text-sm text-muted-foreground">Nothing waiting for approval.</p>
       ) : (
-        <BoPostsClient data={data} />
+        <>
+          <BoPostsClient data={data} />
+          <ListPager basePath="/bo/posts" params={params} page={w.current} pages={w.pages} from={w.from} to={w.to} total={matching} />
+        </>
       )}
     </div>
   )
