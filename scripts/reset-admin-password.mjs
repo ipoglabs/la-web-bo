@@ -5,8 +5,8 @@
 //   node --env-file=.env.local scripts/reset-admin-password.mjs <employeeId|email>
 //
 // The new password is prompted for (hidden) and never stored in plain text.
-// Resetting also unlocks the account, signs out all its sessions, and writes
-// an entry to the audit log.
+// Resetting also unlocks the account, signs out all its sessions, makes them
+// choose their own password at next sign-in, and writes to the audit log.
 
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
@@ -80,7 +80,7 @@ try {
           await admins.updateOne(
             { _id: admin._id },
             {
-              $set: { password: hash, passwordChangedAt: now, failedLoginCount: 0, updatedAt: now },
+              $set: { password: hash, passwordChangedAt: now, failedLoginCount: 0, mustChangePassword: true, updatedAt: now },
               $unset: { lockedUntil: 1 },
               $inc: { tokenVersion: 1 },
             },
