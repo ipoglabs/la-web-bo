@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDebounced } from "@/components/hooks/useDebounced";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,12 +54,15 @@ export default function DeletedUsersPanel() {
 
   const loadingData = !!selectedId && data === null && !dataError;
 
-  // Reset the conversation view whenever the selected user changes.
-  useEffect(() => {
+  // Reset the conversation view whenever the selected user changes
+  // (adjusting state during render, as React recommends, not in an effect).
+  const [convoUserId, setConvoUserId] = useState(selectedId);
+  if (convoUserId !== selectedId) {
+    setConvoUserId(selectedId);
     setOpenConvoId(null);
     setMessages(null);
     setMessagesError(null);
-  }, [selectedId]);
+  }
 
   const filtered = users ?? [];
 

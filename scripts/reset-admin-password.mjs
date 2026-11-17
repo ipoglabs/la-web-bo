@@ -59,7 +59,7 @@ try {
       .find({}, { projection: { employeeId: 1, email: 1, firstName: 1, lastName: 1, role: 1, isActive: 1, twoFactorEnabled: 1, lastLoginAt: 1 } })
       .sort({ employeeId: 1 })
       .toArray();
-    console.table(rows.map(({ _id, ...r }) => r));
+    console.table(rows.map((r) => { const copy = { ...r }; delete copy._id; return copy; }));
   } else {
     const query = arg.includes("@") ? { email: arg.toLowerCase().trim() } : { employeeId: arg.trim() };
     const admin = await admins.findOne(query);

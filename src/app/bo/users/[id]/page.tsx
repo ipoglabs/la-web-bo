@@ -116,6 +116,7 @@ export default async function BoUserAds({
         </div>
 
         {user.image ? (
+          // eslint-disable-next-line @next/next/no-img-element -- external R2 URL, admin-only page
           <img
             src={user.image}
             alt={user.fullName}
