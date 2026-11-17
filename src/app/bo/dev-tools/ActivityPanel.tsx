@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDebounced } from "@/components/hooks/useDebounced";
 import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -241,9 +241,11 @@ export default function ActivityPanel({ initialUserId }: { initialUserId?: strin
   const viewedUserId = detail?.user?.id;
 
   // Jump straight to a user's detail when opened via a cross-link (Users tab).
-  useEffect(() => {
+  const [linkedUserId, setLinkedUserId] = useState(initialUserId);
+  if (linkedUserId !== initialUserId) {
+    setLinkedUserId(initialUserId);
     if (initialUserId) setSelectedId(initialUserId);
-  }, [initialUserId]);
+  }
 
   const filtered = users ?? [];
 

@@ -1,4 +1,4 @@
-// middleware.ts — first, cheap gate: a signed, unexpired bo token.
+// proxy.ts (Next 16 name for middleware) — first, cheap gate: a signed, unexpired bo token.
 // Account status and permissions are re-checked against the DB in
 // requireAdmin / requireAdminPage (src/lib/adminGuard.ts) on every page and action.
 import { NextResponse } from "next/server";
@@ -22,7 +22,7 @@ async function hasValidToken(token: string): Promise<boolean> {
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   const token = req.cookies.get(ADMIN_COOKIE)?.value;

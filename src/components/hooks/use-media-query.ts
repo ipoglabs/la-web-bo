@@ -1,18 +1,20 @@
 import * as React from "react"
 
-// Simple media query hook for responsive UI
+// Simple media query hook for responsive UI. useSyncExternalStore keeps it in
+// step with the browser without setting state inside an effect; on the server
+// (and the first client render) it reports false, as before.
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = React.useState(false)
-
-  React.useEffect(() => {
-    const media = window.matchMedia(query)
-    if (media.matches !== matches) {
-      setMatches(media.matches)
-    }
-    const listener = () => setMatches(media.matches)
-    media.addEventListener("change", listener)
-    return () => media.removeEventListener("change", listener)
-  }, [matches, query])
-
-  return matches
+  const subscribe = React.useCallback(
+    (onChange: () => void) => {
+      const media = window.matchMedia(query)
+      media.addEventListener("change", onChange)
+      return () => media.removeEventListener("change", onChange)
+    },
+    [query],
+  )
+  return React.useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false,
+  )
 }
