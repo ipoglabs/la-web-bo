@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Types, type QueryFilter } from "mongoose"
 import connectDB from "@/lib/db"
-import AdminAuditLog, { AUDIT_ACTIONS, type IAdminAuditLog } from "@/models/adminAuditLog"
+import AdminAuditLog, { AUDIT_ACTIONS, type AuditAction, type IAdminAuditLog } from "@/models/adminAuditLog"
 import { requireAdminPage } from "@/lib/adminGuard"
 
 const PAGE_SIZE = 50
@@ -34,7 +34,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
 
   const filter: QueryFilter<IAdminAuditLog> = {}
   if (sp.action) {
-    if ((AUDIT_ACTIONS as readonly string[]).includes(sp.action)) filter.action = sp.action
+    if ((AUDIT_ACTIONS as readonly string[]).includes(sp.action)) filter.action = sp.action as AuditAction
     else if (/^[a-z]+$/.test(sp.action)) filter.action = { $regex: `^${sp.action}\\.` }
   }
   if (sp.actor && Types.ObjectId.isValid(sp.actor)) filter.actorId = new Types.ObjectId(sp.actor)
