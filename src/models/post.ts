@@ -31,6 +31,8 @@ export interface IPost {
   rejectionReason?: string;
   /** Set by la-web once the seller is emailed about the current rejection. */
   rejectionEmailSentAt?: Date;
+  /** Set by la-web once the seller is emailed that the approved ad is live. */
+  liveEmailSentAt?: Date;
   expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
@@ -222,6 +224,7 @@ const PostSchema = new Schema<IPost>(
     },
     rejectionReason: { type: String },
     rejectionEmailSentAt: { type: Date },
+    liveEmailSentAt: { type: Date },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },

@@ -23,7 +23,7 @@ function describe(res: BulkResult, verb: "Approved" | "Rejected", names: Map<str
     lines.push(
       `Sellers emailed: ${e.sent}` +
         (e.notSent ? `; not emailed (no address, muted or account closed): ${e.notSent}` : "") +
-        (e.failed ? `; email FAILED: ${e.failed} (reported; they still see the reason under My Ads)` : "") +
+        (e.failed ? `; email FAILED: ${e.failed} (reported; they still see the status under My Ads)` : "") +
         ".",
     )
   }

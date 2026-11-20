@@ -33,7 +33,7 @@ export default function AdminPostActions({
 
   if (!canModerate && !canSuspend) return null
 
-  const act = (fn: () => Promise<ActionResult>) =>
+  const act = (fn: () => Promise<ActionResult>, done = "Rejected") =>
     start(async () => {
       setError("")
       setNotice(null)
@@ -47,10 +47,10 @@ export default function AdminPostActions({
       if (res.seller) {
         setNotice(
           res.seller.sent
-            ? { tone: "ok", text: "Rejected. The seller has been emailed the reason." }
+            ? { tone: "ok", text: done === "Approved" ? "Approved. The seller has been emailed that their ad is live." : "Rejected. The seller has been emailed the reason." }
             : res.seller.failed
-              ? { tone: "warn", text: `Rejected, but the seller could NOT be emailed (${res.seller.failed}). They'll still see the reason under My Ads. This has been reported.` }
-              : { tone: "warn", text: `Rejected. No email sent: ${res.seller.skipped}. They'll see the reason under My Ads.` },
+              ? { tone: "warn", text: `${done}, but the seller could NOT be emailed (${res.seller.failed}). They'll still see the status under My Ads. This has been reported.` }
+              : { tone: "warn", text: `${done}. No email sent: ${res.seller.skipped}. They'll see the status under My Ads.` },
         )
       }
       router.refresh()
@@ -76,7 +76,7 @@ export default function AdminPostActions({
         {canModerate && status !== "active" && !(isSuspended && !canSuspend) && (
           <Button
             disabled={pending}
-            onClick={() => act(() => updatePostStatus(postId, "active"))}
+            onClick={() => act(() => updatePostStatus(postId, "active"), "Approved")}
           >
             Approve
           </Button>

@@ -137,7 +137,7 @@
         <tr><td class="n">6</td><td><code>/post/preview</code></td><td>Checks the ad and submits</td><td>—</td></tr>
         <tr><td class="n">7</td><td>Server (<code>addPost.ts</code>)</td><td>—</td><td>Validates against the schema (and Singapore short-let rules), creates an <code>adsId</code>, saves with <code>status: pending</code>, logs <code>POST_CREATED</code></td></tr>
         <tr><td class="n">8</td><td>Server</td><td>—</td><td>Dropdown values the seller typed that aren't options yet → <b>Option requests</b> queue in the BO</td></tr>
-        <tr><td class="n">9</td><td>Email</td><td>Receives a "listing" email</td><td><span class="tag warn">Check</span> the "listing live" email is sent at submit, while the ad is still pending review</td></tr>
+        <tr><td class="n">9</td><td>Email</td><td>Receives "Your listing is under review"</td><td>The "Your listing is live" email comes only after approval (journey 4)</td></tr>
         <tr><td class="n">10</td><td>BO</td><td>Waits</td><td>Ad appears in BO → Ads with an amber "pending" count in the nav</td></tr>
       </tbody>
     </table></div>
@@ -162,10 +162,10 @@
       <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th><th>Recorded in</th></tr></thead>
       <tbody>
         <tr><td class="n">1</td><td>BO → Ads (<code>?status=pending</code>)</td><td>Moderator, Admin, Super Admin</td><td>Opens the queue, reviews one ad or ticks several</td><td>—</td></tr>
-        <tr><td class="n">2a</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Approve</b> → <code>active</code>, ad goes live</td><td>BO audit log; seller's activity (<code>AD_APPROVED</code>)</td></tr>
+        <tr><td class="n">2a</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Approve</b> → <code>active</code>, ad goes live; seller emailed "Your listing is live" (production only)</td><td>BO audit log; seller's activity (<code>AD_APPROVED</code>)</td></tr>
         <tr><td class="n">2b</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Reject</b> with a reason → <code>rejected</code>; seller emailed once per rejection</td><td>BO audit log; <code>AD_REJECTED</code></td></tr>
         <tr><td class="n">2c</td><td>Ad page</td><td>Admin, Super Admin</td><td><b>Suspend</b> → <code>off</code> + suspended. Moderators can't re-approve a suspended ad</td><td>BO audit log; <code>AD_SUSPENDED</code></td></tr>
-        <tr><td class="n">3</td><td>Seller's <code>/my-ads</code></td><td>Seller</td><td>Sees the status and reason; can edit and resubmit (back to <code>pending</code>)</td><td><code>POST_UPDATED</code></td></tr>
+        <tr><td class="n">3</td><td>Seller's <code>/my-ads</code></td><td>Seller</td><td>Sees the status and reason; can edit and resubmit (back to <code>pending</code>, "under review" email)</td><td><code>POST_UPDATED</code></td></tr>
       </tbody>
     </table></div>
   </details></section>
