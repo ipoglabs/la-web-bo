@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>LokalAds Journeys</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --head: #eef1f5; --border: #dde2e9;
+    --text: #18202c; --muted: #5b6676; --accent: #1f5fd6; --accent-soft: #e7effd;
+    --amber: #8a5a00; --amber-soft: #fff4dc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f131a; --surface: #161b24; --head: #1d2430; --border: #2a3342;
+      --text: #e6eaf1; --muted: #9aa5b6; --accent: #7fa8ff; --accent-soft: #1b2843;
+      --amber: #f2c36b; --amber-soft: #33270f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .top a { color: var(--accent); }
+  h1 { font-size: 24px; margin: 0; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  p { margin: 4px 0 12px; }
+  .muted { color: var(--muted); }
+  code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--head); padding: 1px 4px; border-radius: 4px; }
+  .toolbar { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 220px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
+  .toolbar button { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; }
+  details > summary { cursor: pointer; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary h2::before { content: "▸ "; color: var(--muted); }
+  details[open] > summary h2::before { content: "▾ "; }
+  .wrap { overflow-x: auto; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { background: var(--head); font-weight: 600; white-space: nowrap; }
+  td.n { width: 36px; color: var(--muted); }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+  .warn { background: var(--amber-soft); color: var(--amber); }
+  h3 { font-size: 14px; margin: 16px 0 0; }
+  .hidden { display: none; }
+  @media print { .toolbar { display: none; } details { display: block; } section { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top">
+    <div>
+      <h1>LokalAds user journeys</h1>
+      <p class="muted">Every journey on the live site, step by step, for Super Admins and Admins. Last reviewed 20 Nov 2026 against the <code>la-web</code> code and docs.</p>
+    </div>
+    <a href="/bo">← Back to the back office</a>
+  </div>
+
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Filter rows, e.g. pending, email, /my-ads, OTP…" aria-label="Filter journeys">
+    <button type="button" id="expand">Expand all</button>
+    <button type="button" id="collapse">Collapse all</button>
+  </div>
+
+  <!-- ===== Overview ===== -->
+  <section id="overview">
+    <h2>All journeys</h2>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>#</th><th>Journey</th><th>Who</th><th>Starts at</th><th>Ends with</th><th>Back-office touchpoint</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td><a href="#register">Register</a></td><td>New user</td><td><code>/register</code></td><td>New account + signed in</td><td>Users</td><td><code>docs/registration-flow.html</code></td></tr>
+          <tr><td class="n">2</td><td><a href="#login">Sign in &amp; sign out</a></td><td>Returning user</td><td><code>/login</code></td><td>Session cookie</td><td>Users (suspend blocks sign-in)</td><td>journeys/04, code</td></tr>
+          <tr><td class="n">3</td><td><a href="#post">Post an ad</a></td><td>Seller</td><td>"Post Ad" → <code>/post</code></td><td>Ad saved as <code>pending</code></td><td>Ads queue, Options</td><td>code (<code>addPost.ts</code>)</td></tr>
+          <tr><td class="n">4</td><td><a href="#moderate">Ad review (moderation)</a></td><td>Moderator / Admin</td><td>BO → Ads (pending)</td><td>Ad <code>active</code> or <code>rejected</code></td><td>Ads, Audit log</td><td>code (BO)</td></tr>
+          <tr><td class="n">5</td><td><a href="#myads">Manage my ads</a></td><td>Seller</td><td><code>/my-ads</code></td><td>Status change / bump / edit</td><td>Ads</td><td>code (<code>setListingLifecycle.ts</code>)</td></tr>
+          <tr><td class="n">6</td><td><a href="#search">Search &amp; browse</a></td><td>Buyer / visitor</td><td>Home search or category</td><td>Listing results</td><td>—</td><td>journeys/02</td></tr>
+          <tr><td class="n">7</td><td><a href="#detail">View an ad</a></td><td>Buyer / visitor</td><td>Listing card / shared link</td><td>Save, chat or report</td><td>Reports</td><td>journeys/03</td></tr>
+          <tr><td class="n">8</td><td><a href="#chat">Chat</a></td><td>Buyer + seller</td><td>"Contact seller"</td><td>Conversation</td><td>Dev Tools (Super Admin only)</td><td>journeys/06, account-deletion doc</td></tr>
+          <tr><td class="n">9</td><td><a href="#report">Report an ad</a></td><td>Any signed-in user</td><td>"Report this ad"</td><td>Report reviewed / actioned / dismissed</td><td>Reports, Ads</td><td>code, journeys/07</td></tr>
+          <tr><td class="n">10</td><td><a href="#alert">Create a search alert</a></td><td>Signed-in user</td><td>"Create alert"</td><td>Alert + match emails</td><td>—</td><td><code>docs/create-alert-flow.md</code></td></tr>
+          <tr><td class="n">11</td><td><a href="#delete">Delete account</a></td><td>User (or Super Admin)</td><td>Profile → Delete</td><td>Account anonymised</td><td>Users → Delete</td><td><code>docs/account-deletion-flow.md</code></td></tr>
+          <tr><td class="n">12</td><td><a href="#dormant">Dormant-user nudge</a></td><td>System (daily job)</td><td>09:30 cron</td><td>One "we miss you" email</td><td>—</td><td><code>docs/dormant-nudge-flow.md</code></td></tr>
+          <tr><td class="n">13</td><td><a href="#audit">Activity trail</a></td><td>System</td><td>Any user action</td><td><code>ActivityLog</code> row</td><td>Dev Tools, Audit log</td><td><code>docs/audit-flow.md</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 1. Register ===== -->
+  <section id="register"><details open><summary><h2>1. Register</h2></summary>
+    <p class="muted">Four ways to prove who you are, then one shared ending that creates the account. If the email/phone already has an account, the user is simply signed in and registration stops there.</p>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Method</th><th>Where</th><th>What the user does</th><th>What the system does</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>All</td><td><code>/register</code></td><td>Picks Google, Apple, Email or Phone</td><td>—</td></tr>
+        <tr><td class="n">2a</td><td><span class="tag">Google</span></td><td>Google consent screen</td><td>Approves</td><td><code>/api/auth/google-callback</code> looks up the email. Match → signed in. No match → <code>google_pending</code> cookie, go to step 3</td></tr>
+        <tr><td class="n">2b</td><td><span class="tag">Apple</span></td><td>Apple consent → <code>/register/apple-email</code></td><td>Approves, then types a real email and the 6-digit code sent to it</td><td>Looks up <code>appleEmailId</code>. Apple often hides the email, so an extra email-code step is required</td></tr>
+        <tr><td class="n">2c</td><td><span class="tag">Email</span></td><td><code>/register/verify</code></td><td>Enters email, then the 6-digit code</td><td><code>magic-link</code> → <code>verify-magic</code> → <code>resolve-identity</code>. Match → signed in</td></tr>
+        <tr><td class="n">2d</td><td><span class="tag">Phone</span></td><td><code>/register/verify</code></td><td>Enters phone, then the 6-digit code</td><td>Code sent by Twilio (mocked for +91). <code>resolve-identity</code> on <code>primaryNumber</code></td></tr>
+        <tr><td class="n">3</td><td>All</td><td><code>/register/details</code></td><td>Full name, date of birth, gender</td><td>—</td></tr>
+        <tr><td class="n">4</td><td>All</td><td><code>/register/role</code></td><td>Picks roles or skips</td><td>—</td></tr>
+        <tr><td class="n">5</td><td>All</td><td>—</td><td>Submits</td><td><code>POST /api/auth/complete-profile</code>: re-checks proof, duplicate check, <code>User.create</code>, session cookie, <code>REGISTERED</code> activity</td></tr>
+        <tr><td class="n">6</td><td>All</td><td>Home</td><td>Lands signed in</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 2. Login ===== -->
+  <section id="login"><details><summary><h2>2. Sign in &amp; sign out</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>What happens</th><th>Notes for staff</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td><code>/login</code> (or any protected page → <code>/login?next=…</code>)</td><td>User picks Google, Apple, email code or phone code</td><td>No passwords for site users; codes are 6 digits</td></tr>
+        <tr><td class="n">2</td><td>Server</td><td>Identity verified, account looked up</td><td>Suspended or deleted accounts are refused; no session is issued</td></tr>
+        <tr><td class="n">3</td><td>Server</td><td><code>createUserSession()</code> sets the cookie, stamps <code>lastLoginAt</code>, clears <code>dormantNudgedAt</code>, logs <code>LOGIN</code></td><td>Feeds the dormant-user nudge (journey 12)</td></tr>
+        <tr><td class="n">4</td><td>Browser</td><td>Redirect to <code>?next</code> or home</td><td>—</td></tr>
+        <tr><td class="n">5</td><td>Any page</td><td>Sign out clears the session</td><td>Signed-out sessions are deleted after 30 days, idle ones after 60 (data retention job)</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 3. Post an ad ===== -->
+  <section id="post"><details open><summary><h2>3. Post an ad</h2></summary>
+    <p class="muted">Every new ad starts as <code>pending</code> and is invisible to buyers until staff approve it (journey 4).</p>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Page</th><th>What the seller does</th><th>What the system does</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Header → "Post Ad"</td><td>Clicks Post Ad</td><td>Not signed in → <code>/login?next=/post</code></td></tr>
+        <tr><td class="n">2</td><td><code>/post/select-category</code></td><td>Picks category and sub-category</td><td>Only categories enabled for the active country are shown</td></tr>
+        <tr><td class="n">3</td><td><code>/post/details</code></td><td>Title, description, price and the category's own fields</td><td>Form shape comes from the post-form schema for that sub-category</td></tr>
+        <tr><td class="n">4</td><td><code>/post/pick-location</code></td><td>Picks the location</td><td>Stores address + coordinates</td></tr>
+        <tr><td class="n">5</td><td><code>/post/upload-photo</code></td><td>Uploads photos</td><td>Images resized into variants</td></tr>
+        <tr><td class="n">6</td><td><code>/post/preview</code></td><td>Checks the ad and submits</td><td>—</td></tr>
+        <tr><td class="n">7</td><td>Server (<code>addPost.ts</code>)</td><td>—</td><td>Validates against the schema (and Singapore short-let rules), creates an <code>adsId</code>, saves with <code>status: pending</code>, logs <code>POST_CREATED</code></td></tr>
+        <tr><td class="n">8</td><td>Server</td><td>—</td><td>Dropdown values the seller typed that aren't options yet → <b>Option requests</b> queue in the BO</td></tr>
+        <tr><td class="n">9</td><td>Email</td><td>Receives a "listing" email</td><td><span class="tag warn">Check</span> the "listing live" email is sent at submit, while the ad is still pending review</td></tr>
+        <tr><td class="n">10</td><td>BO</td><td>Waits</td><td>Ad appears in BO → Ads with an amber "pending" count in the nav</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Ad statuses</h3>
+    <div class="wrap"><table>
+      <thead><tr><th>Status</th><th>Seen by buyers?</th><th>How it gets there</th></tr></thead>
+      <tbody>
+        <tr><td><code>pending</code></td><td>No</td><td>New ad, or any edit by the seller</td></tr>
+        <tr><td><code>active</code></td><td>Yes</td><td>Approved by staff; or seller resumes / renews</td></tr>
+        <tr><td><code>rejected</code></td><td>No</td><td>Rejected by staff with a reason; seller is emailed (production only)</td></tr>
+        <tr><td><code>off</code></td><td>No</td><td>Seller paused it, or staff suspended it (<code>isSuspended: true</code>)</td></tr>
+        <tr><td><code>expired</code></td><td>No</td><td>Past its end date; seller can renew for 60 days</td></tr>
+        <tr><td><code>closed</code></td><td>No</td><td>Seller marked it sold / closed</td></tr>
+        <tr><td><code>deleted</code></td><td>No</td><td>Seller deleted it, or the owner's account was deleted</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 4. Moderation ===== -->
+  <section id="moderate"><details open><summary><h2>4. Ad review (moderation)</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th><th>Recorded in</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>BO → Ads (<code>?status=pending</code>)</td><td>Moderator, Admin, Super Admin</td><td>Opens the queue, reviews one ad or ticks several</td><td>—</td></tr>
+        <tr><td class="n">2a</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Approve</b> → <code>active</code>, ad goes live</td><td>BO audit log; seller's activity (<code>AD_APPROVED</code>)</td></tr>
+        <tr><td class="n">2b</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Reject</b> with a reason → <code>rejected</code>; seller emailed once per rejection</td><td>BO audit log; <code>AD_REJECTED</code></td></tr>
+        <tr><td class="n">2c</td><td>Ad page</td><td>Admin, Super Admin</td><td><b>Suspend</b> → <code>off</code> + suspended. Moderators can't re-approve a suspended ad</td><td>BO audit log; <code>AD_SUSPENDED</code></td></tr>
+        <tr><td class="n">3</td><td>Seller's <code>/my-ads</code></td><td>Seller</td><td>Sees the status and reason; can edit and resubmit (back to <code>pending</code>)</td><td><code>POST_UPDATED</code></td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 5. My ads ===== -->
+  <section id="myads"><details><summary><h2>5. Manage my ads</h2></summary>
+    <p class="muted">Each user can have at most <b>5</b> active ads.</p>
+    <div class="wrap"><table>
+      <thead><tr><th>Action</th><th>From</th><th>To</th><th>Rules</th></tr></thead>
+      <tbody>
+        <tr><td>Pause</td><td><code>active</code></td><td><code>off</code></td><td>—</td></tr>
+        <tr><td>Resume</td><td><code>off</code> (paused by seller)</td><td><code>active</code></td><td>Counts against the 5-ad limit; not allowed if staff suspended it</td></tr>
+        <tr><td>Renew</td><td><code>expired</code></td><td><code>active</code></td><td>New 60-day period; 5-ad limit</td></tr>
+        <tr><td>Close</td><td><code>active</code> / <code>off</code></td><td><code>closed</code></td><td>—</td></tr>
+        <tr><td>Delete</td><td>Any</td><td><code>deleted</code></td><td>Soft delete; images removed; logs <code>POST_DELETED</code></td></tr>
+        <tr><td>Edit</td><td>Any except deleted</td><td><code>pending</code></td><td>Every edit goes back to review</td></tr>
+        <tr><td>Bump</td><td><code>active</code> only</td><td><code>active</code></td><td>Moves the ad to the top; per-country cooldown; logs <code>POST_BUMPED</code></td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">"Under review" on <code>/my-ads</code> isn't a status: it's shown when the ad has an open user report.</p>
+  </details></section>
+
+  <!-- ===== 6. Search ===== -->
+  <section id="search"><details><summary><h2>6. Search &amp; browse</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Home search bar or category grid</td><td>Keyword or category chosen</td></tr>
+        <tr><td class="n">2</td><td><code>/&lt;country&gt;/listings?cat=…&amp;sub=…</code></td><td>Only <code>active</code> ads for the current country are listed, newest / bumped first</td></tr>
+        <tr><td class="n">3</td><td>Filter panel</td><td>Filters are drafted, applied to the URL on "Apply" (so back/forward and shared links work)</td></tr>
+        <tr><td class="n">4</td><td>Filter chips</td><td>Remove one filter or clear all</td></tr>
+        <tr><td class="n">5</td><td>"Create alert"</td><td>Saves this search as an alert (journey 10)</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 7. Listing detail ===== -->
+  <section id="detail"><details><summary><h2>7. View an ad</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Action</th><th>Who</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td>Open the ad</td><td>Anyone</td><td>Photos, price, details, map, seller card, similar ads. Pending, rejected, paused, expired and deleted ads aren't shown</td></tr>
+        <tr><td>Save to favourites</td><td>Signed-in user</td><td>Added to <code>/favourites</code></td></tr>
+        <tr><td>Contact seller</td><td>Signed-in user (not the seller)</td><td>Opens chat (journey 8)</td></tr>
+        <tr><td>Report this ad</td><td>Signed-in user</td><td>Opens the report form (journey 9)</td></tr>
+        <tr><td>Follow seller / review</td><td>Signed-in user</td><td>Follow from the seller card; reviews shown on the seller's public profile</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 8. Chat ===== -->
+  <section id="chat"><details><summary><h2>8. Chat</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Ad page → "Contact seller"</td><td>Buyer starts the chat; one conversation per buyer + seller + ad</td></tr>
+        <tr><td class="n">2</td><td><code>/chat</code></td><td>Inbox with unread counts</td></tr>
+        <tr><td class="n">3</td><td><code>/chat/[id]</code></td><td>Send messages (logs <code>MESSAGE_SENT</code>), make offers, mark as read</td></tr>
+        <tr><td class="n">4</td><td>Chat menu</td><td>Block the other person: no more messages in that thread</td></tr>
+        <tr><td class="n">5</td><td>Other person deleted their account</td><td>History stays, shown as "Deleted User"; new messages are refused</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">Staff can read private chats only through Dev Tools (Super Admin), and every view is logged. Only open one with a ticket or legal request.</p>
+  </details></section>
+
+  <!-- ===== 9. Report ===== -->
+  <section id="report"><details><summary><h2>9. Report an ad</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Ad page → "Report this ad"</td><td>Signed-in user</td><td>Picks a reason; one open report per user per ad</td></tr>
+        <tr><td class="n">2</td><td>Server</td><td>—</td><td>Report saved as <code>pending</code>; the seller sees "Under review" on <code>/my-ads</code></td></tr>
+        <tr><td class="n">3</td><td>BO → Reports</td><td>Moderator, Admin, Super Admin</td><td>Opens the report and the ad</td></tr>
+        <tr><td class="n">4a</td><td>BO → Reports</td><td>Same</td><td><b>Dismiss</b>: nothing wrong, ad unchanged</td></tr>
+        <tr><td class="n">4b</td><td>BO → Reports</td><td>Same</td><td><b>Reviewed</b>: checked, no action needed</td></tr>
+        <tr><td class="n">4c</td><td>BO → Reports + Ads</td><td>Same (suspend: Admin+)</td><td><b>Actioned</b>: ad rejected or suspended as well</td></tr>
+        <tr><td class="n">5</td><td>Audit log</td><td>—</td><td>Each decision with a note, the staff member and the time</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 10. Alerts ===== -->
+  <section id="alert"><details><summary><h2>10. Create a search alert</h2></summary>
+    <p class="muted">Max <b>5</b> alerts per user. Managed at <code>/my-alerts</code>.</p>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Home banner, ad page or <code>/my-alerts</code></td><td>Opens the 3-step wizard (signed-out users go to login)</td></tr>
+        <tr><td class="n">2</td><td>Step 1</td><td>Category + sub-category</td></tr>
+        <tr><td class="n">3</td><td>Step 2</td><td>Keywords (max 5), location, filters. At least one is required</td></tr>
+        <tr><td class="n">4</td><td>Step 3</td><td>Email / WhatsApp. A channel can only be picked if it's verified on the account</td></tr>
+        <tr><td class="n">5</td><td>Server</td><td>Saves the alert, logs <code>ALERT_CREATED</code>, sends a confirmation email</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Alert emails</h3>
+    <div class="wrap"><table>
+      <thead><tr><th>Email</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><code>ALERT_CREATED</code></td><td>Once, straight after saving</td></tr>
+        <tr><td><code>ALERT_MATCH</code></td><td>Every 5 minutes for "instant" alerts with new matches</td></tr>
+        <tr><td><code>ALERT_DIGEST</code></td><td>08:00 daily or Monday weekly, batched</td></tr>
+        <tr><td><code>ALERT_NO_MATCHES</code></td><td>09:00 daily, after 14+ days with no matches</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 11. Delete account ===== -->
+  <section id="delete"><details><summary><h2>11. Delete account</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>What happens</th><th>Notes for staff</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>User confirms Delete on their profile (or a Super Admin uses BO → Users → Delete)</td><td>Immediate, no undo for the user</td></tr>
+        <tr><td class="n">2</td><td>Name becomes "Deleted User"; email, phone, Apple ID and photo removed</td><td>The same email/phone can register again as a brand-new account</td></tr>
+        <tr><td class="n">3</td><td>All their ads → <code>deleted</code></td><td>—</td></tr>
+        <tr><td class="n">4</td><td>Signed out, confirmation email sent</td><td>—</td></tr>
+        <tr><td class="n">5</td><td>Chats: history kept for the other person, replies blocked</td><td>—</td></tr>
+        <tr><td class="n">6</td><td>Nightly data retention job wipes the kept snapshot after 28 days</td><td>Use the 28-day window for support or legal requests</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 12. Dormant nudge ===== -->
+  <section id="dormant"><details><summary><h2>12. Dormant-user nudge</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Rule</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Runs</td><td>Daily 09:30</td></tr>
+        <tr><td>Who</td><td>Active, not deleted or suspended, has an email, no sign-in for 180 days, opted in to marketing</td></tr>
+        <tr><td>Sends</td><td>One <code>DORMANT_NUDGE</code> email per quiet spell; signing in resets it</td></tr>
+        <tr><td>Limit</td><td>200 per run, longest-quiet first</td></tr>
+        <tr><td>Failed send</td><td>Retried the next day</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 13. Activity ===== -->
+  <section id="audit"><details><summary><h2>13. Activity trail</h2></summary>
+    <p class="muted">Two separate trails: the site's <code>ActivityLog</code> (what users did, and staff decisions on their ads) and the BO audit log (what staff did).</p>
+    <div class="wrap"><table>
+      <thead><tr><th>Event</th><th>Logged when</th><th>Done by</th></tr></thead>
+      <tbody>
+        <tr><td><code>REGISTERED</code>, <code>LOGIN</code></td><td>Account created / signed in</td><td>User</td></tr>
+        <tr><td><code>EMAIL_CHANGED</code>, <code>PHONE_CHANGED</code>, <code>NAME_CHANGED</code> …</td><td>Profile or contact edit</td><td>User</td></tr>
+        <tr><td><code>POST_CREATED</code>, <code>POST_UPDATED</code>, <code>POST_BUMPED</code>, <code>POST_DELETED</code></td><td>Ad changes</td><td>User</td></tr>
+        <tr><td><code>ALERT_CREATED</code>, <code>MESSAGE_SENT</code></td><td>Alert saved / message sent</td><td>User</td></tr>
+        <tr><td><code>AD_APPROVED</code>, <code>AD_REJECTED</code>, <code>AD_SUSPENDED</code></td><td>Staff decision on the user's ad</td><td>Staff (shown as the actor)</td></tr>
+        <tr><td><code>AD_REPORT_REVIEWED</code>, <code>AD_REPORT_DISMISSED</code></td><td>Report closed</td><td>Staff</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+</div>
+<script>
+  (function () {
+    var q = document.getElementById("q");
+    var details = Array.prototype.slice.call(document.querySelectorAll("details"));
+    var rows = Array.prototype.slice.call(document.querySelectorAll("tbody tr"));
+    q.addEventListener("input", function () {
+      var term = q.value.trim().toLowerCase();
+      rows.forEach(function (r) {
+        r.classList.toggle("hidden", term !== "" && r.textContent.toLowerCase().indexOf(term) === -1);
+      });
+      if (term) details.forEach(function (d) { d.open = true; });
+    });
+    document.getElementById("expand").onclick = function () { details.forEach(function (d) { d.open = true; }); };
+    document.getElementById("collapse").onclick = function () { details.forEach(function (d) { d.open = false; }); };
+  })();
+</script>
+</body>
+</html>

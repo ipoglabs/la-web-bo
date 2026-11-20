@@ -1,10 +1,10 @@
 import Link from "next/link"
-import { Users, Megaphone, ShieldPlus, UserCog, Flag, ScrollText, BookOpen, ListPlus, Wrench } from "lucide-react"
+import { Users, Megaphone, ShieldPlus, UserCog, Flag, ScrollText, BookOpen, ListPlus, Wrench, Route } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { requireAdminPage } from "@/lib/adminGuard"
 import { hasPerm, ROLE_LABELS, ROLE_SUMMARY, type Permission } from "@/lib/adminPermissions"
 
-const CARDS: { href: string; title: string; desc: string; perm?: Permission; icon: typeof Users; tone?: string }[] = [
+const CARDS: { href: string; title: string; desc: string; perm?: Permission; icon: typeof Users; tone?: string; plain?: boolean }[] = [
   { href: "/bo/posts?status=pending", title: "Ads", desc: "Review, approve and manage ads", perm: "posts.view", icon: Megaphone },
   { href: "/bo/reports/posts", title: "Ad Reports", desc: "Ads reported by users", perm: "reports.view", icon: Flag, tone: "border-red-200" },
   { href: "/bo/users", title: "Users", desc: "User accounts and their ads", perm: "users.view", icon: Users },
@@ -13,6 +13,7 @@ const CARDS: { href: string; title: string; desc: string; perm?: Permission; ico
   { href: "/bo/register", title: "Add staff", desc: "Create moderator, support and analyst accounts", perm: "staff.create", icon: ShieldPlus, tone: "border-dashed" },
   { href: "/bo/audit-log", title: "Audit log", desc: "Who did what, when, and why", perm: "audit.view", icon: ScrollText },
   { href: "/bo/dev-tools", title: "Dev Tools", desc: "Private user data. Every view is logged", perm: "devtools.view", icon: Wrench, tone: "border-sky-200" },
+  { href: "/bo/journeys", title: "Journeys", desc: "Every user journey on the site, step by step", perm: "journeys.view", icon: Route, plain: true },
   { href: "/bo/handbook", title: "Staff handbook", desc: "Rules and duties for your role", icon: BookOpen },
 ]
 
@@ -36,8 +37,8 @@ export default async function BoDashboard({ searchParams }: { searchParams: Prom
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {CARDS.filter((c) => !c.perm || hasPerm(admin.role, c.perm)).map((c) => (
-          <Link key={c.href} href={c.href}>
+        {CARDS.filter((c) => !c.perm || hasPerm(admin.role, c.perm)).map((c) => {
+          const card = (
             <Card className={`hover:bg-muted/40 transition h-full ${c.tone ?? ""}`}>
               <CardHeader>
                 <c.icon className="h-6 w-6 text-muted-foreground" />
@@ -45,8 +46,14 @@ export default async function BoDashboard({ searchParams }: { searchParams: Prom
                 <CardDescription>{c.desc}</CardDescription>
               </CardHeader>
             </Card>
-          </Link>
-        ))}
+          )
+          // Static HTML pages (route handlers) need a full page load, not client navigation.
+          return c.plain ? (
+            <a key={c.href} href={c.href}>{card}</a>
+          ) : (
+            <Link key={c.href} href={c.href}>{card}</Link>
+          )
+        })}
       </div>
     </div>
   )
