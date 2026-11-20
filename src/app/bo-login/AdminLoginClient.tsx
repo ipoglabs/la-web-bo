@@ -18,6 +18,7 @@ export default function AdminLoginClient() {
   const [code, setCode] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   const post = async (url: string, body: object) => {
     const res = await fetch(url, {
@@ -103,6 +104,31 @@ export default function AdminLoginClient() {
             <Button className="w-full" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </Button>
+
+            {/* No self-service reset on purpose: a person resets it after
+                confirming who's asking (see Staff → their page). */}
+            <button
+              type="button"
+              className="text-sm text-blue-600 underline"
+              aria-expanded={showForgot}
+              onClick={() => setShowForgot((v) => !v)}
+            >
+              Forgot password?
+            </button>
+            {showForgot && (
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 space-y-2">
+                <p>Back-office passwords can&apos;t be reset by email. Ask a person instead:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Moderator, Support or Analyst: ask your Admin (or a Super Admin).</li>
+                  <li>Admin or Super Admin: ask a Super Admin.</li>
+                </ul>
+                <p>
+                  They&apos;ll call you back on a number they already have to check it&apos;s really you, then give you a
+                  temporary password. You&apos;ll choose your own when you next sign in.
+                </p>
+                <p>Locked out after too many tries? They can unlock you the same way, or wait 15 minutes.</p>
+              </div>
+            )}
           </form>
         ) : (
           <form className="space-y-3" onSubmit={submitCode}>
