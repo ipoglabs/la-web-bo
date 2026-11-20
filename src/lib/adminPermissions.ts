@@ -21,6 +21,7 @@ export const PERMISSIONS = [
   "staff.manage", // change role, activate / deactivate
   "audit.view",
   "devtools.view", // private conversations, deleted-user data — PII
+  "journeys.view", // how every site journey works, step by step
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -40,6 +41,7 @@ export const ROLE_PERMS: Record<AdminRole, readonly Permission[]> = {
     "staff.create",
     "staff.manage",
     "audit.view",
+    "journeys.view",
   ],
   moderator: [
     "dashboard.view",

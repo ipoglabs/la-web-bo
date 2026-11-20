@@ -9,7 +9,8 @@ import { requireAdminPage } from "@/lib/adminGuard";
 import { hasPerm, ROLE_LABELS, type Permission } from "@/lib/adminPermissions";
 import { reportError } from "@/lib/errorReport";
 
-const NAV: { href: string; label: string; perm?: Permission; badge?: "posts" | "options" }[] = [
+// `plain`: a static HTML page served by a route handler, so a full page load, not a client-side <Link>.
+const NAV: { href: string; label: string; perm?: Permission; badge?: "posts" | "options"; plain?: boolean }[] = [
   { href: "/bo", label: "Dashboard" },
   { href: "/bo/users", label: "Users", perm: "users.view" },
   { href: "/bo/posts", label: "Ads", perm: "posts.view", badge: "posts" },
@@ -18,6 +19,7 @@ const NAV: { href: string; label: string; perm?: Permission; badge?: "posts" | "
   { href: "/bo/employees", label: "Staff", perm: "staff.view" },
   { href: "/bo/audit-log", label: "Audit log", perm: "audit.view" },
   { href: "/bo/dev-tools", label: "Dev Tools", perm: "devtools.view" },
+  { href: "/bo/journeys", label: "Journeys", perm: "journeys.view", plain: true },
   { href: "/bo/handbook", label: "Handbook" },
 ];
 
@@ -86,16 +88,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="font-semibold">Admin Panel</div>
 
           <nav className="flex flex-wrap items-center gap-4">
-            {NAV.filter((n) => !n.perm || hasPerm(admin.role, n.perm)).map((n) => (
-              <Link key={n.href} href={n.href} className="text-blue-600 underline">
-                {n.label}
-                {n.badge && counts[n.badge] > 0 && (
-                  <span className="ml-1 rounded-full bg-amber-500 px-1.5 text-xs text-white no-underline">
-                    {counts[n.badge]}
-                  </span>
-                )}
-              </Link>
-            ))}
+            {NAV.filter((n) => !n.perm || hasPerm(admin.role, n.perm)).map((n) =>
+              n.plain ? (
+                <a key={n.href} href={n.href} className="text-blue-600 underline">
+                  {n.label}
+                </a>
+              ) : (
+                <Link key={n.href} href={n.href} className="text-blue-600 underline">
+                  {n.label}
+                  {n.badge && counts[n.badge] > 0 && (
+                    <span className="ml-1 rounded-full bg-amber-500 px-1.5 text-xs text-white no-underline">
+                      {counts[n.badge]}
+                    </span>
+                  )}
+                </Link>
+              ),
+            )}
 
             <AdminHeader name={admin.name || admin.email.split("@")[0]} email={admin.email} role={ROLE_LABELS[admin.role]} />
           </nav>

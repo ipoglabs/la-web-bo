@@ -13,6 +13,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The journeys page reads this file at request time; make sure it ships with the function.
+  outputFileTracingIncludes: {
+    "/bo/journeys": ["./src/content/journeys.html"],
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
