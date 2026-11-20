@@ -3,7 +3,7 @@ import connectDB from "@/lib/db"
 import AdminUser from "@/models/adminUser"
 import AdminAuditLog from "@/models/adminAuditLog"
 import { requireAdminPage } from "@/lib/adminGuard"
-import { canManageRole, hasPerm, assignableRoles, ROLE_LABELS, type AdminRole } from "@/lib/adminPermissions"
+import { canManageRole, hasPerm, assignableRoles, requiresTwoFactor, ROLE_LABELS, type AdminRole } from "@/lib/adminPermissions"
 import Link from "next/link"
 import { Types } from "mongoose"
 import EmployeeActions from "./EmployeeActions"
@@ -111,7 +111,9 @@ export default async function BoEmployeeDetails({
             value={
               employee.twoFactorEnabled
                 ? `On${employee.twoFactorEnabledAt ? ` since ${new Date(employee.twoFactorEnabledAt).toLocaleDateString("en-GB")}` : ""}`
-                : "Not set up yet (asked at next sign-in)"
+                : requiresTwoFactor(employee.role)
+                  ? "Not set up yet (asked at next sign-in)"
+                  : "Off (optional for this role)"
             }
           />
           <Info label="Designation" value={employee.designation} />

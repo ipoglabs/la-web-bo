@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAdminPage } from "@/lib/adminGuard";
-import { ROLE_LABELS, ROLE_SUMMARY } from "@/lib/adminPermissions";
+import { ROLE_LABELS, ROLE_SUMMARY, requiresTwoFactor } from "@/lib/adminPermissions";
 import ChangePasswordForm from "./ChangePasswordForm";
 import TwoFactorSetup, { RegenerateRecoveryCodes } from "./TwoFactorSetup";
 import TestAlertButton from "./TestAlertButton";
@@ -51,7 +51,15 @@ export default async function AdminProfilePage() {
             </p>
           </>
         ) : (
-          <TwoFactorSetup />
+          <>
+            {!requiresTwoFactor(admin.role) && (
+              <p className="text-sm text-muted-foreground">
+                <b>Off.</b> Optional for your role: you sign in with your password only. Turning it on means a stolen
+                password alone can&apos;t get into your account.
+              </p>
+            )}
+            <TwoFactorSetup />
+          </>
         )}
       </div>
 

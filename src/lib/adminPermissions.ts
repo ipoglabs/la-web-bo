@@ -101,9 +101,11 @@ export function assignableRoles(actor: AdminRole): AdminRole[] {
   return ADMIN_ROLES.filter((r) => canManageRole(actor, r));
 }
 
-/** Roles that must use two-factor sign-in. Everyone can see users' personal
- *  data, so everyone needs it; narrow this list only with a good reason. */
-export const TWO_FACTOR_REQUIRED_ROLES: readonly AdminRole[] = ADMIN_ROLES;
+/** Roles that must use two-factor sign-in. Everyone except Super Admins
+ *  (owner's decision, 2026-11-20): for them it's optional, and they can still
+ *  turn it on from My Profile. Everyone else can see users' personal data, so
+ *  they need it; narrow this list only with a good reason. */
+export const TWO_FACTOR_REQUIRED_ROLES: readonly AdminRole[] = ADMIN_ROLES.filter((r) => r !== "super_admin");
 
 export function requiresTwoFactor(role: AdminRole): boolean {
   return TWO_FACTOR_REQUIRED_ROLES.includes(role);
