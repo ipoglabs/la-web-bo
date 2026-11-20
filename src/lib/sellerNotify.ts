@@ -1,7 +1,8 @@
-// Asks the main site (la-web) to email a seller about a moderation decision.
+// Asks the main site (la-web) to email a seller about a moderation decision:
+// "your listing is live" after an approval, or the reason after a rejection.
 // The email templates and the Resend account live there; this only sends the
 // ad's id. la-web reads the reason and the seller's address from the database
-// and sends at most once per rejection (see la-web
+// and sends at most once per decision (see la-web
 // src/app/api/internal/listing-moderated/route.ts).
 //
 // Production only: LA_WEB_URL and BO_NOTIFY_SECRET are set for the Production
@@ -14,7 +15,7 @@ export type NotifyResult =
   | { sent: false; skipped: string }
   | { sent: false; failed: string };
 
-export async function notifySellerOfRejection(postId: string): Promise<NotifyResult> {
+export async function notifySeller(postId: string): Promise<NotifyResult> {
   const base = process.env.LA_WEB_URL;
   const secret = process.env.BO_NOTIFY_SECRET;
   if (!base || !secret) return { sent: false, skipped: "seller emails are off in this environment" };
@@ -32,7 +33,7 @@ export async function notifySellerOfRejection(postId: string): Promise<NotifyRes
     if (res.ok) return { sent: false, skipped: data.skipped ?? "not sent" };
     throw new Error(`listing-moderated returned ${res.status}: ${data.error ?? "unknown"}`);
   } catch (e) {
-    await reportError(e, { where: "notifySellerOfRejection", extra: { postId } });
+    await reportError(e, { where: "notifySeller", extra: { postId } });
     return { sent: false, failed: "couldn't reach the main site to email the seller" };
   }
 }

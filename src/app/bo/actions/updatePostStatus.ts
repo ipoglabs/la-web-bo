@@ -7,7 +7,7 @@ import { requireAdmin, logAdminAction, MAX_REASON, MIN_REASON } from "@/lib/admi
 import type { AuditAction } from "@/models/adminAuditLog";
 import { reportError } from "@/lib/errorReport";
 import { PAGE_SIZE } from "@/lib/listQuery";
-import { notifySellerOfRejection, type NotifyResult } from "@/lib/sellerNotify";
+import { notifySeller, type NotifyResult } from "@/lib/sellerNotify";
 
 type Status = "active" | "off" | "expired" | "rejected";
 
@@ -41,12 +41,13 @@ async function moderateOne(
   }
 
   // A rejection carries a reason for the seller; any other status clears it.
-  // Every change clears rejectionEmailSentAt, so a later re-rejection is
-  // emailed again (la-web sends at most once per rejection).
+  // Every change clears the "seller emailed" markers, so a later approval or
+  // re-rejection is emailed again (la-web sends at most once per decision).
+  const sentMarkers = { rejectionEmailSentAt: 1, liveEmailSentAt: 1 } as const;
   const update =
     status === "rejected"
-      ? { $set: { status, rejectionReason, updatedAt: new Date() }, $unset: { rejectionEmailSentAt: 1 } }
-      : { $set: { status, updatedAt: new Date() }, $unset: { rejectionReason: 1, rejectionEmailSentAt: 1 } };
+      ? { $set: { status, rejectionReason, updatedAt: new Date() }, $unset: sentMarkers }
+      : { $set: { status, updatedAt: new Date() }, $unset: { rejectionReason: 1, ...sentMarkers } };
 
   await Post.updateOne({ _id: postId }, update);
 
@@ -59,10 +60,12 @@ async function moderateOne(
     meta: { from: current.status, to: status, ...(opts.bulk ? { bulk: opts.bulk } : {}) },
   });
 
-  // Tell the seller. The rejection itself already succeeded, so a failed
-  // email is reported to the moderator, not treated as a failed action.
+  // Tell the seller: "live" on approval, the reason on rejection. The decision
+  // itself already succeeded, so a failed email is reported to the moderator,
+  // not treated as a failed action.
   let seller: NotifyResult | undefined;
-  if (status === "rejected" && opts.emailSeller) seller = await notifySellerOfRejection(postId);
+  const wasLive = status === "active" && current.status === "active";
+  if ((status === "rejected" || status === "active") && !wasLive && opts.emailSeller) seller = await notifySeller(postId);
   return { ok: true, from: String(current.status ?? "pending"), seller };
 }
 
@@ -129,7 +132,7 @@ export async function bulkUpdatePostStatus(
     await connectDB();
     const batch = new Types.ObjectId().toHexString();
     const skipped: { id: string; why: string }[] = [];
-    const rejectedIds: string[] = [];
+    const emailIds: string[] = [];
     let done = 0;
     let failed = 0;
 
@@ -138,7 +141,7 @@ export async function bulkUpdatePostStatus(
         const r = await moderateOne(guard.admin, id, status, rejectionReason, { bulk: batch, emailSeller: false });
         if (r.ok) {
           done++;
-          if (status === "rejected") rejectedIds.push(id);
+          emailIds.push(id);
         } else skipped.push({ id, why: r.error });
       } catch (e) {
         failed++;
@@ -148,10 +151,10 @@ export async function bulkUpdatePostStatus(
 
     // Emails after all decisions are saved, a few at a time.
     let emails: { sent: number; notSent: number; failed: number } | undefined;
-    if (rejectedIds.length) {
+    if (emailIds.length) {
       emails = { sent: 0, notSent: 0, failed: 0 };
-      for (let i = 0; i < rejectedIds.length; i += 5) {
-        const results = await Promise.all(rejectedIds.slice(i, i + 5).map((id) => notifySellerOfRejection(id)));
+      for (let i = 0; i < emailIds.length; i += 5) {
+        const results = await Promise.all(emailIds.slice(i, i + 5).map((id) => notifySeller(id)));
         for (const r of results) {
           if (r.sent) emails.sent++;
           else if ("failed" in r) emails.failed++;
