@@ -20,6 +20,7 @@ const NAV: { href: string; label: string; perm?: Permission; badge?: "posts" | "
   { href: "/bo/audit-log", label: "Audit log", perm: "audit.view" },
   { href: "/bo/dev-tools", label: "Dev Tools", perm: "devtools.view" },
   { href: "/bo/journeys", label: "Journeys", perm: "journeys.view", plain: true },
+  { href: "/bo/post-forms", label: "Post forms", perm: "postforms.view" },
   { href: "/bo/handbook", label: "Handbook" },
 ];
 

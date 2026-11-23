@@ -22,6 +22,7 @@ export const PERMISSIONS = [
   "audit.view",
   "devtools.view", // private conversations, deleted-user data — PII
   "journeys.view", // how every site journey works, step by step
+  "postforms.view", // the post form reviews, per category
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -42,6 +43,7 @@ export const ROLE_PERMS: Record<AdminRole, readonly Permission[]> = {
     "staff.manage",
     "audit.view",
     "journeys.view",
+    "postforms.view",
   ],
   moderator: [
     "dashboard.view",
