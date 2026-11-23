@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Users, Megaphone, ShieldPlus, UserCog, Flag, ScrollText, BookOpen, ListPlus, Wrench, Route } from "lucide-react"
+import { Users, Megaphone, ShieldPlus, UserCog, Flag, ScrollText, BookOpen, ListPlus, Wrench, Route, ClipboardList } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { requireAdminPage } from "@/lib/adminGuard"
 import { hasPerm, ROLE_LABELS, ROLE_SUMMARY, type Permission } from "@/lib/adminPermissions"
@@ -14,6 +14,7 @@ const CARDS: { href: string; title: string; desc: string; perm?: Permission; ico
   { href: "/bo/audit-log", title: "Audit log", desc: "Who did what, when, and why", perm: "audit.view", icon: ScrollText },
   { href: "/bo/dev-tools", title: "Dev Tools", desc: "Private user data. Every view is logged", perm: "devtools.view", icon: Wrench, tone: "border-sky-200" },
   { href: "/bo/journeys", title: "Journeys", desc: "Every user journey on the site, step by step", perm: "journeys.view", icon: Route, plain: true },
+  { href: "/bo/post-forms", title: "Post form reviews", desc: "Every post form's fields, suggested changes and what was built", perm: "postforms.view", icon: ClipboardList },
   { href: "/bo/handbook", title: "Staff handbook", desc: "Rules and duties for your role", icon: BookOpen },
 ]
 
