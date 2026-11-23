@@ -73,7 +73,8 @@ renderer.link = (token: Tokens.Link) =>
 const baseTable = renderer.table.bind(renderer);
 renderer.table = (token: Tokens.Table) => `<div class="wrap">${baseTable(token)}</div>`;
 
-export function renderPostFormHtml(doc: PostFormDoc & { body: string }): string {
+/** `live`: the "Live form today" section's inner HTML (already escaped), or null for pages without one. */
+export function renderPostFormHtml(doc: PostFormDoc & { body: string }, live: string | null = null): string {
   const article = marked.parse(doc.body, { gfm: true, async: false, renderer }) as string;
   const source = doc.source
     ? ` · <a href="${escapeHtml(doc.source)}" target="_blank" rel="noopener noreferrer">Open the doc in Claude</a>`
@@ -119,6 +120,14 @@ export function renderPostFormHtml(doc: PostFormDoc & { body: string }): string 
   li:has(> input[type="checkbox"]), li:has(> p > input[type="checkbox"]) { list-style: none; margin-left: -20px; }
   input[type="checkbox"] { margin: 0 6px 0 0; vertical-align: -1px; }
   blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--border); color: var(--muted); }
+  .live-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 24px 12px; margin-top: 12px; }
+  .live-box > summary { cursor: pointer; font-weight: 600; font-size: 16px; padding: 10px 0; }
+  .live-box .muted { color: var(--muted); margin-top: 0; }
+  .live td { font-size: 13px; }
+  .live td.n { color: var(--muted); width: 32px; }
+  .live tr.sec td { background: var(--head); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .live td div + div { margin-top: 4px; }
+  .label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 20px 0 0; }
   @media print { nav { display: none; } article { border: 0; padding: 0; } }
 </style>
 </head>
@@ -128,6 +137,15 @@ export function renderPostFormHtml(doc: PostFormDoc & { body: string }): string 
     <a href="/bo/post-forms">← All post form reviews</a>
     <span>Copy of the Claude doc${source}</span>
   </nav>
+${
+  live === null
+    ? ""
+    : `  <details class="live-box" open>
+    <summary>Live form today</summary>
+${live}
+  </details>
+  <p class="label">Review (copy of the Claude doc)</p>`
+}
   <article>
 ${article}
   </article>
