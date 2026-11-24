@@ -111,6 +111,7 @@ try {
       ? await col("adreports").countDocuments({ $or: [{ reporterId: { $in: [...ids, ...idStrings] } }, { reporterEmail: { $in: oldEmails } }] })
       : await col("adreports").countDocuments({ reporterId: { $in: [...ids, ...idStrings] } }),
     "  staff audit entries naming them (label masked)": await col("adminauditlogs").countDocuments({ targetType: "user", targetId: { $in: idStrings } }),
+    "  escalations about them (label masked)": await col("boescalations").countDocuments({ targetType: "user", targetId: { $in: idStrings } }),
   };
   for (const [k, n] of Object.entries(counts)) note(k, n);
 
@@ -145,6 +146,10 @@ try {
       { targetType: "user", targetId: { $in: idStrings } },
       { $set: { targetLabel: "[wiped account]" } },
     );
+    await col("boescalations").updateMany(
+      { targetType: "user", targetId: { $in: idStrings } },
+      { $set: { targetLabel: "[wiped account]" } },
+    );
   }
 
   // ── 2. Time limits for everyone ─────────────────────────────────────────────
@@ -153,6 +158,7 @@ try {
     ["idle sessions > 60 days", "sessions", { revokedAt: null, lastActiveAt: { $lte: before(RULES.idleSessionDays) } }],
     ["activity log > 1 year", "activitylogs", { createdAt: { $lte: before(RULES.activityLogDays) } }],
     ["staff audit log > 2 years", "adminauditlogs", { createdAt: { $lte: before(RULES.staffAuditLogDays) } }],
+    ["resolved escalations > 2 years", "boescalations", { status: "resolved", resolvedAt: { $lte: before(RULES.staffAuditLogDays) } }],
     ["search analytics > 400 days", "searchevents", { searchedAt: { $lte: before(RULES.searchEventDays) } }],
     ["job history > 90 days", "jobruns", { createdAt: { $lte: before(RULES.jobRunDays) } }],
   ];

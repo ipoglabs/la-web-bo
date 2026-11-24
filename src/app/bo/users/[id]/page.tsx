@@ -9,6 +9,9 @@ import { Types } from "mongoose";
 import Link from "next/link";
 import { requireAdminPage } from "@/lib/adminGuard";
 import { hasPerm } from "@/lib/adminPermissions";
+import { reportCountsByOwner, VALID_REPORTS_ESCALATE } from "@/lib/reportCounts";
+import EscalateButton from "../../components/EscalateButton";
+import OpenEscalation from "../../components/OpenEscalation";
 
 function Pill({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -71,6 +74,8 @@ export default async function BoUserAds({
   }
 
   const posts = await Post.find({ $or: or }).sort({ updatedAt: -1 }).lean<LeanPost[]>();
+  const reports = (await reportCountsByOwner([id])).get(id) ?? { open: 0, valid: 0, dismissed: 0, total: 0 };
+  const canEscalate = hasPerm(admin.role, "escalations.create") && !hasPerm(admin.role, "escalations.review");
   const safePosts = posts.flatMap((p) => toClientPost(p) ?? []);
 
   return (
@@ -88,6 +93,8 @@ export default async function BoUserAds({
           isSuspended={isSuspended}
         />
       </div>
+
+      <OpenEscalation targetType="user" targetId={id} canReview={hasPerm(admin.role, "escalations.review")} />
 
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -123,6 +130,29 @@ export default async function BoUserAds({
             className="h-16 w-16 rounded-full border object-cover"
           />
         ) : null}
+      </div>
+
+      <div
+        className={`rounded-xl border p-5 ${
+          reports.valid >= VALID_REPORTS_ESCALATE ? "bg-red-50 border-red-200" : "bg-white shadow"
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold">Reports against this user&apos;s ads</h2>
+            <p className="text-sm text-slate-700">
+              {reports.total === 0
+                ? "None."
+                : `${reports.valid} valid (actioned) · ${reports.open} open · ${reports.dismissed} dismissed`}
+            </p>
+            {reports.valid >= VALID_REPORTS_ESCALATE && (
+              <p className="mt-1 text-sm font-medium text-red-700">
+                {VALID_REPORTS_ESCALATE}+ valid reports: this account needs an admin&apos;s suspension review.
+              </p>
+            )}
+          </div>
+          {canEscalate && !isSuspended && <EscalateButton targetType="user" targetId={id} />}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow border p-5">

@@ -38,6 +38,9 @@ export const AUDIT_ACTIONS = [
   "report.review",
   "option.add",
   "option.dismiss",
+  // escalations (moderator / support → admins)
+  "escalation.create",
+  "escalation.resolve",
   // sensitive reads
   "devtools.view_user",
   "devtools.view_conversation",

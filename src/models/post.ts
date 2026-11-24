@@ -200,6 +200,8 @@ export interface IPost {
   /** Set when the ad was taken offline because its owner's account was
    *  suspended; unsuspending the account puts these ads back live. */
   pausedForOwnerSuspension?: boolean;
+  /** Set by la-web once the seller has been emailed "listing removed" for the current suspension. */
+  suspensionEmailSentAt?: Date;
 
   /** Real page-view counter — incremented on each listing-detail page load. */
   viewCount?: number;
@@ -401,6 +403,7 @@ const PostSchema = new Schema<IPost>(
 
     statusBeforeSuspend: String,
     pausedForOwnerSuspension: Boolean,
+    suspensionEmailSentAt: Date,
   },
   { timestamps: true }
 );
