@@ -2,6 +2,8 @@
 
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
+import User from "@/models/user";
+import { hasPerm } from "@/lib/adminPermissions";
 import { Types } from "mongoose";
 import { requireAdmin, logAdminAction, MAX_REASON, MIN_REASON } from "@/lib/adminGuard";
 import type { AuditAction } from "@/models/adminAuditLog";
@@ -31,13 +33,29 @@ async function moderateOne(
   rejectionReason: string,
   opts: { bulk?: string; emailSeller: boolean },
 ): Promise<Outcome> {
-  // Suspension is an admin decision; moderators can't quietly re-approve a suspended ad.
-  const current = await Post.findById(postId).select("status isSuspended name adsId").lean();
+  const current = await Post.findById(postId).select("status isSuspended ownerId name adsId").lean();
   if (!current) return { ok: false, error: "Post not found", skipped: true };
   if (opts.bulk && current.status === status) return { ok: false, error: `already ${status}`, skipped: true };
   if (opts.bulk && current.status === "deleted") return { ok: false, error: "deleted by the seller", skipped: true };
-  if (current.isSuspended && status === "active" && admin.role === "moderator") {
-    return { ok: false, error: "This ad was suspended by an admin. Ask an admin to review it.", skipped: true };
+  // A suspended ad stays hidden on the site whatever its status, so changing
+  // the status would only make bo look different from the site. Lifting the
+  // suspension (Unsuspend, admins only, with a reason) is the one way back.
+  if (current.isSuspended) {
+    return {
+      ok: false,
+      error: hasPerm(admin.role, "posts.suspend")
+        ? "This ad is suspended. Unsuspend it first (with a reason)."
+        : "This ad was suspended by an admin. Ask an admin to review it.",
+      skipped: true,
+    };
+  }
+  // The site doesn't check the owner when showing ads, so bo mustn't put a
+  // suspended seller's ad live.
+  if (status === "active" && current.ownerId) {
+    const owner = await User.findById(current.ownerId).select("isSuspended accountStatus").lean();
+    if (owner && (owner.isSuspended || owner.accountStatus === "Suspended" || owner.accountStatus === "Deleted")) {
+      return { ok: false, error: "The seller's account is suspended or closed.", skipped: true };
+    }
   }
 
   // A rejection carries a reason for the seller; any other status clears it.

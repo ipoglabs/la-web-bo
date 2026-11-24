@@ -33,6 +33,7 @@ export const AUDIT_ACTIONS = [
   "post.pause",
   "post.expire",
   "post.suspend",
+  "post.unsuspend",
   // reports & options
   "report.review",
   "option.add",

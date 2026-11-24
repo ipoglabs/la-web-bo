@@ -53,7 +53,11 @@ export default function AdminUserActions({
 
   const onToggleSuspend = () => {
     const next = !localSuspended;
-    const reason = askReason(`${next ? "Suspend" : "Unsuspend"} this user?\n${who}`);
+    const reason = askReason(
+      next
+        ? `Suspend this user?\n${who}\n\nThey are signed out and their live ads go offline until they are unsuspended.`
+        : `Unsuspend this user?\n${who}\n\nAds that went offline because of the suspension go live again.`,
+    );
     if (!reason) return;
 
     start(async () => {
@@ -63,6 +67,9 @@ export default function AdminUserActions({
         return;
       }
       setLocalSuspended(next);
+      if ("ads" in res && res.ads) {
+        alert(next ? `${res.ads} live ad(s) taken offline.` : `${res.ads} ad(s) back live.`);
+      }
       router.refresh();
     });
   };
