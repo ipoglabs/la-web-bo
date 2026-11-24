@@ -6,6 +6,7 @@ import Post from "@/models/post";
 import { Types } from "mongoose";
 import { requireAdmin, logAdminAction, cleanReason, MIN_REASON } from "@/lib/adminGuard";
 import { reportError } from "@/lib/errorReport";
+import { notifyAccountStatus, describeNotice } from "@/lib/sellerNotify";
 
 export async function suspendUser(userId: string, suspend: boolean, reason: string) {
   try {
@@ -23,6 +24,9 @@ export async function suspendUser(userId: string, suspend: boolean, reason: stri
     const user = await User.findById(userId);
     if (!user) return { ok: false, error: "User not found" };
     if (user.accountStatus === "Deleted") return { ok: false, error: "This account is deleted." };
+
+    const already = Boolean(user.isSuspended) || user.accountStatus === "Suspended";
+    if (already === suspend) return { ok: false, error: suspend ? "This user is already suspended." : "This user isn't suspended." };
 
     if (!Array.isArray(user.audit)) user.audit = [];
 
@@ -69,7 +73,10 @@ export async function suspendUser(userId: string, suspend: boolean, reason: stri
       meta: suspend ? { adsTakenOffline: ads } : { adsRestored: ads },
     });
 
-    return { ok: true, ads };
+    // "Your account has been suspended" (with a way to appeal) / "reinstated".
+    const email = describeNotice(await notifyAccountStatus(userId), "The user");
+
+    return { ok: true, ads, email };
   } catch (e) {
     await reportError(e, { where: "action:suspendUser" });
     return { ok: false, error: "Suspend failed" };

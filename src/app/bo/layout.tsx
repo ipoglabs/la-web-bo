@@ -5,16 +5,19 @@ import TwoFactorSetup from "./profile/TwoFactorSetup";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import OptionRequest from "@/models/optionRequest";
+import AdReport from "@/models/adReport";
+import Escalation from "@/models/escalation";
 import { requireAdminPage } from "@/lib/adminGuard";
 import { hasPerm, ROLE_LABELS, type Permission } from "@/lib/adminPermissions";
 import { reportError } from "@/lib/errorReport";
 
 // `plain`: a static HTML page served by a route handler, so a full page load, not a client-side <Link>.
-const NAV: { href: string; label: string; perm?: Permission; badge?: "posts" | "options"; plain?: boolean }[] = [
+const NAV: { href: string; label: string; perm?: Permission; badge?: "posts" | "options" | "reports" | "escalations"; plain?: boolean }[] = [
   { href: "/bo", label: "Dashboard" },
   { href: "/bo/users", label: "Users", perm: "users.view" },
   { href: "/bo/posts", label: "Ads", perm: "posts.view", badge: "posts" },
-  { href: "/bo/reports/posts", label: "Reports", perm: "reports.view" },
+  { href: "/bo/reports/posts", label: "Reports", perm: "reports.view", badge: "reports" },
+  { href: "/bo/escalations", label: "Escalations", perm: "escalations.review", badge: "escalations" },
   { href: "/bo/option-requests", label: "Options", perm: "options.review", badge: "options" },
   { href: "/bo/employees", label: "Staff", perm: "staff.view" },
   { href: "/bo/audit-log", label: "Audit log", perm: "audit.view" },
@@ -70,14 +73,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   // Work-waiting badges for the nav; a DB hiccup shouldn't take the panel down.
-  let counts = { posts: 0, options: 0 };
+  let counts = { posts: 0, options: 0, reports: 0, escalations: 0 };
   try {
     await connectDB();
-    const [posts, options] = await Promise.all([
+    const [posts, options, reports, escalations] = await Promise.all([
       hasPerm(admin.role, "posts.moderate") ? Post.countDocuments({ status: "pending" }) : 0,
       hasPerm(admin.role, "options.review") ? OptionRequest.countDocuments({ status: "pending" }) : 0,
+      hasPerm(admin.role, "reports.review") ? AdReport.countDocuments({ status: { $in: ["pending", "reviewed"] } }) : 0,
+      hasPerm(admin.role, "escalations.review") ? Escalation.countDocuments({ status: "open" }) : 0,
     ]);
-    counts = { posts, options };
+    counts = { posts, options, reports, escalations };
   } catch (e) {
     await reportError(e, { where: "page:bo-layout-counts", level: "warning" });
   }

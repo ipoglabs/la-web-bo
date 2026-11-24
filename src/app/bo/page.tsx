@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Users, Megaphone, ShieldPlus, UserCog, Flag, ScrollText, BookOpen, ListPlus, Wrench, Route, ClipboardList } from "lucide-react"
+import { Users, Megaphone, ShieldPlus, UserCog, Flag, ScrollText, BookOpen, ListPlus, Wrench, Route, ClipboardList, Siren } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { requireAdminPage } from "@/lib/adminGuard"
 import { hasPerm, ROLE_LABELS, ROLE_SUMMARY, type Permission } from "@/lib/adminPermissions"
@@ -7,6 +7,7 @@ import { hasPerm, ROLE_LABELS, ROLE_SUMMARY, type Permission } from "@/lib/admin
 const CARDS: { href: string; title: string; desc: string; perm?: Permission; icon: typeof Users; tone?: string; plain?: boolean }[] = [
   { href: "/bo/posts?status=pending", title: "Ads", desc: "Review, approve and manage ads", perm: "posts.view", icon: Megaphone },
   { href: "/bo/reports/posts", title: "Ad Reports", desc: "Ads reported by users", perm: "reports.view", icon: Flag, tone: "border-red-200" },
+  { href: "/bo/escalations", title: "Escalations", desc: "Cases moderators and support handed to admins", perm: "escalations.review", icon: Siren, tone: "border-amber-200" },
   { href: "/bo/users", title: "Users", desc: "User accounts and their ads", perm: "users.view", icon: Users },
   { href: "/bo/option-requests", title: "Option requests", desc: "New dropdown values sellers typed", perm: "options.review", icon: ListPlus },
   { href: "/bo/employees", title: "Staff", desc: "Back-office accounts, roles and status", perm: "staff.view", icon: UserCog },

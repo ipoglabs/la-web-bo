@@ -67,9 +67,11 @@ export default function AdminUserActions({
         return;
       }
       setLocalSuspended(next);
-      if ("ads" in res && res.ads) {
-        alert(next ? `${res.ads} live ad(s) taken offline.` : `${res.ads} ad(s) back live.`);
-      }
+      const lines = [
+        "ads" in res && res.ads ? (next ? `${res.ads} live ad(s) taken offline.` : `${res.ads} ad(s) back live.`) : "",
+        "email" in res && res.email ? res.email : "",
+      ].filter(Boolean);
+      if (lines.length) alert(lines.join("\n"));
       router.refresh();
     });
   };

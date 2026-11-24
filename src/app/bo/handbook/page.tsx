@@ -69,6 +69,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Deactivate team members who leave or move role, the same day.",
         "Unlock or reset the password of Moderators, Support and Analysts from Staff → their page, after confirming by phone it's them. Give the temporary password in person or by call, never in the same chat as their Employee ID.",
         "Spot-check 10 moderator decisions a week from the audit log; coach on wrong calls.",
+        "Work the Escalations queue daily, oldest first. Take the action on the ad or user page as usual, then resolve the escalation saying what you decided. Nothing should sit there more than 24 hours.",
       ],
     },
     {
@@ -77,6 +78,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Decide user suspensions escalated by moderators. Suspend for: fraud/scams, repeated prohibited ads, harassment, fake identity. Suspending a user signs them out and takes all their live ads offline; unsuspending brings those ads back.",
         "Suspend ads that are illegal, dangerous or fraudulent. A suspended ad can't be approved, paused or rejected; only Unsuspend (on the ad's page) brings it back, to the status it had before.",
         "Unsuspend only after checking the original reason in the audit log; write why you're reversing it.",
+        "Appeals: suspended sellers are emailed and pointed to the support page. Support escalates the appeal to you; decide it as a fresh case (not by whoever suspended them), unsuspend or keep it, and resolve the escalation with your reasoning.",
       ],
     },
     {
@@ -94,7 +96,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Work the Pending queue oldest-first; target a decision within 24 hours of posting.",
         "Approve when: photos match the item, price is realistic, category is right, contact details aren't in the description.",
         "Reject (with a reason the seller can act on) when: wrong category, misleading photos, missing info, duplicate ad, contact info in text.",
-        "Escalate to an Admin (don't just reject) for: scams, weapons, drugs, adult content, stolen goods, counterfeit items, anything involving minors.",
+        "Escalate to an Admin (don't just reject) for: scams, weapons, drugs, adult content, stolen goods, counterfeit items, anything involving minors. Use \"Escalate to Admin…\" on the ad, user or report, and say what you saw. The ad and user pages show when a case is already with the admins.",
         "Bulk actions (tick ads on the Ads list, up to one page of 25): only for clear-cut cases where the title and photo are enough, e.g. obvious duplicates or spam, or a run of plainly fine ads. Anything you'd hesitate over: open it and decide on its own. A bulk reject sends every seller the same reason, so write one that is true for all of them.",
         "Each ad in a bulk action is logged separately, with a shared batch id. Admins can see and review whole batches in the Audit log.",
       ],
@@ -102,8 +104,10 @@ const DUTIES: Record<AdminRole, Duty[]> = {
     {
       title: "User reports",
       items: [
-        "Review new Reports daily. Mark Actioned only if you changed something; Dismissed if the report was unfounded. Always add a note.",
-        "If one user collects 3+ valid reports, escalate their account to an Admin for suspension review.",
+        "Review open Reports daily; the list puts high priority first, then oldest. Every decision needs an internal note.",
+        "Actioned means the ad broke the rules, so choose what happens to it: reject (with a reason for the seller), pause, or (admins) suspend. \"Already handled\" only works if the ad isn't live any more. Actioning closes the ad's other open reports too.",
+        "Dismiss when the report was unfounded. Either way the person who reported it is emailed that it was closed (never your note).",
+        "If a seller shows 3+ valid reports (red badge on Reports, red box on their user page), escalate their account to an Admin for suspension review.",
       ],
     },
     {
@@ -122,7 +126,8 @@ const DUTIES: Record<AdminRole, Duty[]> = {
         "Verify identity before discussing an account: registered email or phone OTP, never just a name.",
         "Never read out or send full phone numbers, emails or passwords; never ask a user for their password or OTP.",
         "Explain rejections using the reason on the ad; if the user disagrees, pass it to a Moderator.",
-        "Pass reports of scams, threats or account takeover to an Admin immediately.",
+        "Pass reports of scams, threats or account takeover to an Admin immediately, with \"Escalate to Admin…\" on the user or ad.",
+        "Appeals: a seller whose ad or account was suspended is told to contact support. Check who they are, then escalate the user or ad with \"Appeal:\" and what they said. Don't promise an outcome.",
       ],
     },
   ],
@@ -141,7 +146,7 @@ const CADENCE: { when: string; who: string; items: string[] }[] = [
   {
     when: "Every day",
     who: "Moderators (Admin covers gaps)",
-    items: ["Clear the Pending ads queue", "Review new Reports", "Escalate scams and illegal content"],
+    items: ["Clear the Pending ads queue", "Review open Reports", "Escalate scams and illegal content", "Admins: clear the Escalations queue"],
   },
   {
     when: "Every week",

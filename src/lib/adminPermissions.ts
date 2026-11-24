@@ -16,6 +16,8 @@ export const PERMISSIONS = [
   "reports.view",
   "reports.review",
   "options.review", // add values to live post forms
+  "escalations.create", // hand a case up to the admins
+  "escalations.review", // the admins' queue of escalated cases
   "staff.view",
   "staff.create",
   "staff.manage", // change role, activate / deactivate
@@ -38,6 +40,8 @@ export const ROLE_PERMS: Record<AdminRole, readonly Permission[]> = {
     "reports.view",
     "reports.review",
     "options.review",
+    "escalations.create",
+    "escalations.review",
     "staff.view",
     "staff.create",
     "staff.manage",
@@ -52,8 +56,9 @@ export const ROLE_PERMS: Record<AdminRole, readonly Permission[]> = {
     "posts.moderate",
     "reports.view",
     "reports.review",
+    "escalations.create",
   ],
-  support: ["dashboard.view", "users.view", "posts.view", "reports.view"],
+  support: ["dashboard.view", "users.view", "posts.view", "reports.view", "escalations.create"],
   analyst: ["dashboard.view", "posts.view"],
 };
 

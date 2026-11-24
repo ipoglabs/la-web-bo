@@ -114,7 +114,8 @@ export async function dismissOptionRequest(id: string): Promise<ActionResult> {
       targetLabel: `${req.category} › ${req.subcategory} (${req.country}) · ${req.fieldLabel}: ${req.value}`,
     });
     return { ok: true };
-  } catch {
+  } catch (err) {
+    await reportError(err, { where: "action:dismissOptionRequest" });
     return { ok: false, error: "Couldn't dismiss the request." };
   }
 }

@@ -8,6 +8,13 @@ import { updatePostStatus } from "../../actions/updatePostStatus"
 import { suspendPost, unsuspendPost } from "../../actions/suspendPost"
 
 type SellerNotice = { sent: boolean; skipped?: string; failed?: string }
+const SENT_TEXT: Record<string, string> = {
+  Approved: "Approved. The seller has been emailed that their ad is live.",
+  Rejected: "Rejected. The seller has been emailed the reason.",
+  Suspended: "Suspended. The seller has been emailed that the ad was removed, and how to appeal.",
+  Unsuspended: "Unsuspended and live again. The seller has been emailed that their ad is live.",
+}
+
 type ActionResult = { ok: boolean; error?: string; seller?: SellerNotice }
 
 export default function AdminPostActions({
@@ -47,7 +54,7 @@ export default function AdminPostActions({
       if (res.seller) {
         setNotice(
           res.seller.sent
-            ? { tone: "ok", text: done === "Approved" ? "Approved. The seller has been emailed that their ad is live." : "Rejected. The seller has been emailed the reason." }
+            ? { tone: "ok", text: SENT_TEXT[done] ?? `${done}. The seller has been emailed.` }
             : res.seller.failed
               ? { tone: "warn", text: `${done}, but the seller could NOT be emailed (${res.seller.failed}). They'll still see the status under My Ads. This has been reported.` }
               : { tone: "warn", text: `${done}. No email sent: ${res.seller.skipped}. They'll see the status under My Ads.` },
@@ -59,13 +66,13 @@ export default function AdminPostActions({
   const onSuspend = () => {
     const r = window.prompt("Suspend this ad? It goes offline and only an admin can bring it back.\n\nReason (saved to the audit log, min 5 characters):")
     if (r === null) return
-    act(() => suspendPost(postId, r))
+    act(() => suspendPost(postId, r), "Suspended")
   }
 
   const onUnsuspend = () => {
     const r = window.prompt("Lift the suspension? The ad goes back to the status it had before it was suspended (live, if it was live).\n\nCheck the original reason in the audit log first. Why are you reversing it? (min 5 characters):")
     if (r === null) return
-    act(() => unsuspendPost(postId, r))
+    act(() => unsuspendPost(postId, r), "Unsuspended")
   }
 
   return (

@@ -5,6 +5,8 @@ import AdReport from "@/models/adReport"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Types } from "mongoose"
+import EscalateButton from "../../components/EscalateButton"
+import OpenEscalation from "../../components/OpenEscalation"
 import AdminPostActions from "./AdminPostActions"
 import { REPORT_ISSUE_LABELS } from "@/lib/reportIssueLabels"
 import { requireAdminPage } from "@/lib/adminGuard"
@@ -204,6 +206,18 @@ export default async function BoPostDetailsPage({
               </Row>
             </dl>
           </Card>
+
+          <OpenEscalation targetType="post" targetId={post._id.toString()} canReview={hasPerm(admin.role, "escalations.review")} />
+
+          {hasPerm(admin.role, "escalations.create") && !hasPerm(admin.role, "escalations.review") && !post.isSuspended && (
+            <div className="bg-white p-5 rounded-xl border shadow space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Scam, weapons, drugs, adult content, stolen or counterfeit goods, anything involving minors: escalate
+                to an Admin instead of only rejecting.
+              </p>
+              <EscalateButton targetType="post" targetId={post._id.toString()} />
+            </div>
+          )}
 
           <AdminPostActions
             postId={post._id.toString()}
