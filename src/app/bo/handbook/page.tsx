@@ -74,8 +74,8 @@ const DUTIES: Record<AdminRole, Duty[]> = {
     {
       title: "Escalations",
       items: [
-        "Decide user suspensions escalated by moderators. Suspend for: fraud/scams, repeated prohibited ads, harassment, fake identity.",
-        "Suspend ads that are illegal, dangerous or fraudulent; these need an Admin to restore.",
+        "Decide user suspensions escalated by moderators. Suspend for: fraud/scams, repeated prohibited ads, harassment, fake identity. Suspending a user signs them out and takes all their live ads offline; unsuspending brings those ads back.",
+        "Suspend ads that are illegal, dangerous or fraudulent. A suspended ad can't be approved, paused or rejected; only Unsuspend (on the ad's page) brings it back, to the status it had before.",
         "Unsuspend only after checking the original reason in the audit log; write why you're reversing it.",
       ],
     },

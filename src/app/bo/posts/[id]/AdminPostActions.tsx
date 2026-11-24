@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { updatePostStatus } from "../../actions/updatePostStatus"
-import { suspendPost } from "../../actions/suspendPost"
+import { suspendPost, unsuspendPost } from "../../actions/suspendPost"
 
 type SellerNotice = { sent: boolean; skipped?: string; failed?: string }
 type ActionResult = { ok: boolean; error?: string; seller?: SellerNotice }
@@ -62,10 +62,23 @@ export default function AdminPostActions({
     act(() => suspendPost(postId, r))
   }
 
+  const onUnsuspend = () => {
+    const r = window.prompt("Lift the suspension? The ad goes back to the status it had before it was suspended (live, if it was live).\n\nCheck the original reason in the audit log first. Why are you reversing it? (min 5 characters):")
+    if (r === null) return
+    act(() => unsuspendPost(postId, r))
+  }
+
   return (
     <div className="bg-white p-5 rounded-xl border shadow space-y-3">
 
-      {status === "pending" && (
+      {isSuspended && (
+        <p className="text-sm font-medium text-red-700">
+          Suspended by an admin — hidden from the site whatever its status.{" "}
+          {canSuspend ? "Unsuspend it to restore it." : "Only an admin can restore it."}
+        </p>
+      )}
+
+      {status === "pending" && !isSuspended && (
         <p className="text-sm font-medium text-amber-700">
           Waiting for approval — this ad is hidden from the site until approved.
         </p>
@@ -73,7 +86,7 @@ export default function AdminPostActions({
 
       <div className="flex flex-wrap gap-3">
 
-        {canModerate && status !== "active" && !(isSuspended && !canSuspend) && (
+        {canModerate && !isSuspended && status !== "active" && (
           <Button
             disabled={pending}
             onClick={() => act(() => updatePostStatus(postId, "active"), "Approved")}
@@ -82,7 +95,7 @@ export default function AdminPostActions({
           </Button>
         )}
 
-        {canModerate && status === "active" && (
+        {canModerate && !isSuspended && status === "active" && (
           <Button
             variant="outline"
             disabled={pending}
@@ -92,7 +105,7 @@ export default function AdminPostActions({
           </Button>
         )}
 
-        {canModerate && status !== "rejected" && (
+        {canModerate && !isSuspended && status !== "rejected" && (
           <Button
             variant="destructive"
             disabled={pending}
@@ -102,13 +115,15 @@ export default function AdminPostActions({
           </Button>
         )}
 
-        {canSuspend && (
-          <Button
-            variant="destructive"
-            disabled={pending || isSuspended}
-            onClick={onSuspend}
-          >
-            {isSuspended ? "Suspended" : "Suspend"}
+        {canSuspend && !isSuspended && (
+          <Button variant="destructive" disabled={pending} onClick={onSuspend}>
+            Suspend
+          </Button>
+        )}
+
+        {canSuspend && isSuspended && (
+          <Button variant="outline" disabled={pending} onClick={onUnsuspend}>
+            Unsuspend…
           </Button>
         )}
 

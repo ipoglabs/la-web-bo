@@ -195,6 +195,11 @@ export interface IPost {
   isSuspended?: boolean;
   suspendedAt?: Date;
   suspendedBy?: mongoose.Types.ObjectId;
+  /** Status the ad had when an admin suspended it; unsuspending restores it. */
+  statusBeforeSuspend?: string;
+  /** Set when the ad was taken offline because its owner's account was
+   *  suspended; unsuspending the account puts these ads back live. */
+  pausedForOwnerSuspension?: boolean;
 
   /** Real page-view counter — incremented on each listing-detail page load. */
   viewCount?: number;
@@ -393,6 +398,9 @@ const PostSchema = new Schema<IPost>(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+
+    statusBeforeSuspend: String,
+    pausedForOwnerSuspension: Boolean,
   },
   { timestamps: true }
 );
