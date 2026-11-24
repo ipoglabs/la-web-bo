@@ -54,7 +54,7 @@
   <div class="top">
     <div>
       <h1>LokalAds user journeys</h1>
-      <p class="muted">Every journey on the live site, step by step, for Super Admins and Admins. Last reviewed 20 Nov 2026 against the <code>la-web</code> code and docs.</p>
+      <p class="muted">Every journey on the live site, step by step, for Super Admins and Admins. Last reviewed 24 Nov 2026 against the <code>la-web</code> and back-office code.</p>
     </div>
     <a href="/bo">← Back to the back office</a>
   </div>
@@ -75,16 +75,18 @@
           <tr><td class="n">1</td><td><a href="#register">Register</a></td><td>New user</td><td><code>/register</code></td><td>New account + signed in</td><td>Users</td><td><code>docs/registration-flow.html</code></td></tr>
           <tr><td class="n">2</td><td><a href="#login">Sign in &amp; sign out</a></td><td>Returning user</td><td><code>/login</code></td><td>Session cookie</td><td>Users (suspend blocks sign-in)</td><td>journeys/04, code</td></tr>
           <tr><td class="n">3</td><td><a href="#post">Post an ad</a></td><td>Seller</td><td>"Post Ad" → <code>/post</code></td><td>Ad saved as <code>pending</code></td><td>Ads queue, Options</td><td>code (<code>addPost.ts</code>)</td></tr>
-          <tr><td class="n">4</td><td><a href="#moderate">Ad review (moderation)</a></td><td>Moderator / Admin</td><td>BO → Ads (pending)</td><td>Ad <code>active</code> or <code>rejected</code></td><td>Ads, Audit log</td><td>code (BO)</td></tr>
+          <tr><td class="n">4</td><td><a href="#moderate">Ad review (moderation)</a></td><td>Moderator / Admin</td><td>BO → Ads (pending)</td><td>Ad <code>active</code>, <code>rejected</code>, paused or suspended</td><td>Ads, Escalations, Audit log</td><td>code (BO)</td></tr>
           <tr><td class="n">5</td><td><a href="#myads">Manage my ads</a></td><td>Seller</td><td><code>/my-ads</code></td><td>Status change / bump / edit</td><td>Ads</td><td>code (<code>setListingLifecycle.ts</code>)</td></tr>
           <tr><td class="n">6</td><td><a href="#search">Search &amp; browse</a></td><td>Buyer / visitor</td><td>Home search or category</td><td>Listing results</td><td>—</td><td>journeys/02</td></tr>
           <tr><td class="n">7</td><td><a href="#detail">View an ad</a></td><td>Buyer / visitor</td><td>Listing card / shared link</td><td>Save, chat or report</td><td>Reports</td><td>journeys/03</td></tr>
           <tr><td class="n">8</td><td><a href="#chat">Chat</a></td><td>Buyer + seller</td><td>"Contact seller"</td><td>Conversation</td><td>Dev Tools (Super Admin only)</td><td>journeys/06, account-deletion doc</td></tr>
-          <tr><td class="n">9</td><td><a href="#report">Report an ad</a></td><td>Any signed-in user</td><td>"Report this ad"</td><td>Report reviewed / actioned / dismissed</td><td>Reports, Ads</td><td>code, journeys/07</td></tr>
+          <tr><td class="n">9</td><td><a href="#report">Report an ad</a></td><td>Any signed-in user</td><td>"Report this ad"</td><td>Report actioned or dismissed; reporter emailed</td><td>Reports, Ads, Escalations</td><td>code, journeys/07</td></tr>
           <tr><td class="n">10</td><td><a href="#alert">Create a search alert</a></td><td>Signed-in user</td><td>"Create alert"</td><td>Alert + match emails</td><td>—</td><td><code>docs/create-alert-flow.md</code></td></tr>
           <tr><td class="n">11</td><td><a href="#delete">Delete account</a></td><td>User (or Super Admin)</td><td>Profile → Delete</td><td>Account anonymised</td><td>Users → Delete</td><td><code>docs/account-deletion-flow.md</code></td></tr>
           <tr><td class="n">12</td><td><a href="#dormant">Dormant-user nudge</a></td><td>System (daily job)</td><td>09:30 cron</td><td>One "we miss you" email</td><td>—</td><td><code>docs/dormant-nudge-flow.md</code></td></tr>
           <tr><td class="n">13</td><td><a href="#audit">Activity trail</a></td><td>System</td><td>Any user action</td><td><code>ActivityLog</code> row</td><td>Dev Tools, Audit log</td><td><code>docs/audit-flow.md</code></td></tr>
+          <tr><td class="n">14</td><td><a href="#suspend">Suspension &amp; appeal</a></td><td>Admin, then the user</td><td>BO → ad or user page</td><td>Ad / account restored or kept suspended</td><td>Ads, Users, Escalations</td><td>code (BO)</td></tr>
+          <tr><td class="n">15</td><td><a href="#escalate">Escalate to an Admin</a></td><td>Moderator / Support</td><td>"Escalate to Admin…"</td><td>Escalation resolved with a decision</td><td>Escalations, Audit log</td><td>code (BO)</td></tr>
         </tbody>
       </table>
     </div>
@@ -148,12 +150,13 @@
         <tr><td><code>pending</code></td><td>No</td><td>New ad, or any edit by the seller</td></tr>
         <tr><td><code>active</code></td><td>Yes</td><td>Approved by staff; or seller resumes / renews</td></tr>
         <tr><td><code>rejected</code></td><td>No</td><td>Rejected by staff with a reason; seller is emailed (production only)</td></tr>
-        <tr><td><code>off</code></td><td>No</td><td>Seller paused it, or staff suspended it (<code>isSuspended: true</code>)</td></tr>
+        <tr><td><code>off</code></td><td>No</td><td>Seller or staff paused it, the owner's account was suspended (<code>pausedForOwnerSuspension</code>), or an admin suspended the ad</td></tr>
         <tr><td><code>expired</code></td><td>No</td><td>Past its end date; seller can renew for 60 days</td></tr>
         <tr><td><code>closed</code></td><td>No</td><td>Seller marked it sold / closed</td></tr>
         <tr><td><code>deleted</code></td><td>No</td><td>Seller deleted it, or the owner's account was deleted</td></tr>
       </tbody>
     </table></div>
+    <p class="muted"><b>Suspended</b> isn't a status: it's a separate flag (<code>isSuspended</code>). A suspended ad is hidden whatever its status, and only an admin's Unsuspend brings it back (journey 14).</p>
   </details></section>
 
   <!-- ===== 4. Moderation ===== -->
@@ -162,9 +165,11 @@
       <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th><th>Recorded in</th></tr></thead>
       <tbody>
         <tr><td class="n">1</td><td>BO → Ads (<code>?status=pending</code>)</td><td>Moderator, Admin, Super Admin</td><td>Opens the queue, reviews one ad or ticks several</td><td>—</td></tr>
-        <tr><td class="n">2a</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Approve</b> → <code>active</code>, ad goes live; seller emailed "Your listing is live" (production only)</td><td>BO audit log; seller's activity (<code>AD_APPROVED</code>)</td></tr>
+        <tr><td class="n">2a</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Approve</b> → <code>active</code>, ad goes live; seller emailed "Your listing is live" (production only). Refused if the seller's account is suspended or closed</td><td>BO audit log; seller's activity (<code>AD_APPROVED</code>)</td></tr>
         <tr><td class="n">2b</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Reject</b> with a reason → <code>rejected</code>; seller emailed once per rejection</td><td>BO audit log; <code>AD_REJECTED</code></td></tr>
-        <tr><td class="n">2c</td><td>Ad page</td><td>Admin, Super Admin</td><td><b>Suspend</b> → <code>off</code> + suspended. Moderators can't re-approve a suspended ad</td><td>BO audit log; <code>AD_SUSPENDED</code></td></tr>
+        <tr><td class="n">2c</td><td>Ad page</td><td>Same</td><td><b>Pause</b> a live ad → <code>off</code>; no email</td><td>BO audit log</td></tr>
+        <tr><td class="n">2d</td><td>Ad page</td><td>Admin, Super Admin</td><td><b>Suspend</b> (scam, illegal, dangerous) → hidden, status saved for later; seller emailed "listing removed" with a link to appeal. While suspended it can't be approved, paused or rejected, singly or in bulk (journey 14)</td><td>BO audit log; <code>AD_SUSPENDED</code></td></tr>
+        <tr><td class="n">2e</td><td>Ad page</td><td>Moderator</td><td><b>Escalate to Admin…</b> instead of only rejecting for scams, weapons, drugs, adult content, stolen or counterfeit goods, anything involving minors (journey 15)</td><td>BO audit log; Escalations</td></tr>
         <tr><td class="n">3</td><td>Seller's <code>/my-ads</code></td><td>Seller</td><td>Sees the status and reason; can edit and resubmit (back to <code>pending</code>, "under review" email)</td><td><code>POST_UPDATED</code></td></tr>
       </tbody>
     </table></div>
@@ -238,11 +243,13 @@
       <tbody>
         <tr><td class="n">1</td><td>Ad page → "Report this ad"</td><td>Signed-in user</td><td>Picks a reason; one open report per user per ad</td></tr>
         <tr><td class="n">2</td><td>Server</td><td>—</td><td>Report saved as <code>pending</code>; the seller sees "Under review" on <code>/my-ads</code></td></tr>
-        <tr><td class="n">3</td><td>BO → Reports</td><td>Moderator, Admin, Super Admin</td><td>Opens the report and the ad</td></tr>
-        <tr><td class="n">4a</td><td>BO → Reports</td><td>Same</td><td><b>Dismiss</b>: nothing wrong, ad unchanged</td></tr>
-        <tr><td class="n">4b</td><td>BO → Reports</td><td>Same</td><td><b>Reviewed</b>: checked, no action needed</td></tr>
-        <tr><td class="n">4c</td><td>BO → Reports + Ads</td><td>Same (suspend: Admin+)</td><td><b>Actioned</b>: ad rejected or suspended as well</td></tr>
-        <tr><td class="n">5</td><td>Audit log</td><td>—</td><td>Each decision with a note, the staff member and the time</td></tr>
+        <tr><td class="n">3</td><td>BO → Reports (Open tab)</td><td>Moderator, Admin, Super Admin</td><td>Works the list high priority first, then oldest first. Each row shows the ad's state and the seller's count of valid reports (red at 3+)</td></tr>
+        <tr><td class="n">4a</td><td>BO → Reports → Review…</td><td>Same</td><td><b>Mark reviewed</b>: checked, still open</td></tr>
+        <tr><td class="n">4b</td><td>Same</td><td>Same</td><td><b>Dismiss</b>: the report was unfounded; ad unchanged</td></tr>
+        <tr><td class="n">4c</td><td>Same</td><td>Same (suspend: Admin+)</td><td><b>Actioned</b>: pick what happens to the ad (reject with a reason for the seller, pause, or suspend). "Already handled" only if the ad isn't live. The ad's other open reports close too</td></tr>
+        <tr><td class="n">5</td><td>Email</td><td>Reporter</td><td>When the report closes (actioned or dismissed), the reporter gets "Resolved" or "Dismissed" with a fixed neutral line, never the staff note (production only)</td></tr>
+        <tr><td class="n">6</td><td>BO</td><td>Moderator / Support</td><td>Seller with 3+ valid reports → escalate their account for a suspension review (journey 15)</td></tr>
+        <tr><td class="n">7</td><td>Audit log</td><td>—</td><td>Each decision with a required note, the staff member and the time. Closed reports can't be reopened</td></tr>
       </tbody>
     </table></div>
   </details></section>
@@ -311,8 +318,51 @@
         <tr><td><code>EMAIL_CHANGED</code>, <code>PHONE_CHANGED</code>, <code>NAME_CHANGED</code> …</td><td>Profile or contact edit</td><td>User</td></tr>
         <tr><td><code>POST_CREATED</code>, <code>POST_UPDATED</code>, <code>POST_BUMPED</code>, <code>POST_DELETED</code></td><td>Ad changes</td><td>User</td></tr>
         <tr><td><code>ALERT_CREATED</code>, <code>MESSAGE_SENT</code></td><td>Alert saved / message sent</td><td>User</td></tr>
-        <tr><td><code>AD_APPROVED</code>, <code>AD_REJECTED</code>, <code>AD_SUSPENDED</code></td><td>Staff decision on the user's ad</td><td>Staff (shown as the actor)</td></tr>
-        <tr><td><code>AD_REPORT_REVIEWED</code>, <code>AD_REPORT_DISMISSED</code></td><td>Report closed</td><td>Staff</td></tr>
+        <tr><td><code>AD_APPROVED</code>, <code>AD_REJECTED</code>, <code>AD_SUSPENDED</code>, <code>AD_RESTORED</code></td><td>Staff decision on the user's ad</td><td>Staff, via the back office (<code>source: back-office</code>; the staff member is in the BO audit log)</td></tr>
+        <tr><td><code>AD_REPORT_REVIEWED</code>, <code>AD_REPORT_DISMISSED</code></td><td>Report actioned / dismissed</td><td>Staff, via the back office</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 14. Suspension & appeal ===== -->
+  <section id="suspend"><details><summary><h2>14. Suspension &amp; appeal</h2></summary>
+    <h3>Suspend an ad</h3>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>BO → ad page → Suspend</td><td>Admin, Super Admin</td><td>Internal reason required. Ad hidden at once; its status is saved; seller emailed "listing removed" with a link to the support page to appeal</td></tr>
+        <tr><td class="n">2</td><td>BO → ad page → Unsuspend…</td><td>Admin, Super Admin</td><td>Reason required. The ad goes back to the status it had before. If that was live, the seller gets "your listing is live" again</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Suspend a user</h3>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>BO → user page → Suspend</td><td>Admin, Super Admin</td><td>Reason required. User can't sign in; all their live ads go offline (marked <code>pausedForOwnerSuspension</code>); their pending ads can't be approved. Emailed "account suspended" with a link to appeal</td></tr>
+        <tr><td class="n">2</td><td>BO → user page → Unsuspend</td><td>Admin, Super Admin</td><td>Reason required. Exactly the ads taken offline by the suspension go live again; ads the seller paused, or an admin suspended one by one, stay as they are. Emailed "account reinstated"</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Appeal</h3>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Email → support page</td><td>Seller</td><td>Contacts support to appeal</td></tr>
+        <tr><td class="n">2</td><td>BO → user or ad → Escalate to Admin…</td><td>Support</td><td>Checks who they are, escalates with "Appeal:" and what they said. No promises on the outcome</td></tr>
+        <tr><td class="n">3</td><td>BO → Escalations</td><td>An Admin who didn't make the original call</td><td>Decides as a fresh case: unsuspend or keep. Resolves the escalation with the reasoning</td></tr>
+      </tbody>
+    </table></div>
+  </details></section>
+
+  <!-- ===== 15. Escalation ===== -->
+  <section id="escalate"><details><summary><h2>15. Escalate to an Admin</h2></summary>
+    <div class="wrap"><table>
+      <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Ad page, user page or report → "Escalate to Admin…"</td><td>Moderator, Support</td><td>Writes what the admins should look at (internal). One open escalation per ad / user / report</td></tr>
+        <tr><td class="n">2</td><td>Ad and user pages</td><td>All staff</td><td>An amber banner shows the case is already with the admins</td></tr>
+        <tr><td class="n">3</td><td>BO → Escalations (nav badge, dashboard card)</td><td>Admin, Super Admin</td><td>Open cases, oldest first. Take the action on the ad or user page as usual</td></tr>
+        <tr><td class="n">4</td><td>BO → Escalations → Resolve…</td><td>Same</td><td>Writes what was decided; the case moves to Resolved</td></tr>
+        <tr><td class="n">5</td><td>Audit log</td><td>—</td><td>Both steps logged against the ad / user / report. Resolved escalations are deleted after 2 years</td></tr>
       </tbody>
     </table></div>
   </details></section>
