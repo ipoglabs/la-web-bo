@@ -1,5 +1,5 @@
 // /bo/journeys — a plain, self-contained HTML page (src/content/journeys.html)
-// describing every user journey on the live site, in tables.
+// a BRD of every user journey on the live site, one section at a time from a sidebar menu.
 // Super Admin and Admin only (permission "journeys.view").
 import { readFile } from "node:fs/promises";
 import path from "node:path";
