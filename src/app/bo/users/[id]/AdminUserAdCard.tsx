@@ -44,7 +44,7 @@ export default function AdminUserAdCard({ post }: { post: PostSummary }) {
         )}
         {status === "active" && (
           <Button size="sm" variant="outline" disabled={pending} onClick={() => update("off")}>
-            Pause
+            Freeze
           </Button>
         )}
         <Button size="sm" variant="outline" disabled={pending} onClick={() => router.push(`/bo/posts/${post.id}`)}>

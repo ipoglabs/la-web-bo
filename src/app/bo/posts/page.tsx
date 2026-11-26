@@ -23,7 +23,7 @@ const TAB_LABELS: Record<Tab, string> = {
   pending: "Pending approval",
   active: "Active",
   rejected: "Rejected",
-  off: "Paused / suspended",
+  off: "Paused, frozen or suspended",
   all: "All",
 }
 

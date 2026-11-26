@@ -179,7 +179,7 @@
         <tr><td class="n">J01</td><td><a href="#register">Register</a></td><td>New user</td><td><code>/register</code></td><td>New account + signed in</td><td>Users</td><td><code>docs/registration-flow.html</code></td></tr>
         <tr><td class="n">J02</td><td><a href="#login">Sign in &amp; sign out</a></td><td>Returning user</td><td><code>/login</code></td><td>Session cookie</td><td>Users (suspend blocks sign-in)</td><td>journeys/04, code</td></tr>
         <tr><td class="n">J03</td><td><a href="#post">Post an ad</a></td><td>Seller</td><td>"Post Ad" → <code>/post</code></td><td>Ad saved as <code>pending</code></td><td>Ads queue, Options</td><td>code (<code>addPost.ts</code>)</td></tr>
-        <tr><td class="n">J04</td><td><a href="#moderate">Ad review (moderation)</a></td><td>Moderator / Admin</td><td>BO → Ads (pending)</td><td>Ad <code>active</code>, <code>rejected</code>, paused or suspended</td><td>Ads, Escalations, Audit log</td><td>code (BO)</td></tr>
+        <tr><td class="n">J04</td><td><a href="#moderate">Ad review (moderation)</a></td><td>Moderator / Admin</td><td>BO → Ads (pending)</td><td>Ad <code>active</code>, <code>rejected</code>, frozen or suspended</td><td>Ads, Escalations, Audit log</td><td>code (BO)</td></tr>
         <tr><td class="n">J05</td><td><a href="#myads">Manage my ads</a></td><td>Seller</td><td><code>/my-ads</code></td><td>Status change / bump / edit</td><td>Ads</td><td>code (<code>setListingLifecycle.ts</code>)</td></tr>
         <tr><td class="n">J06</td><td><a href="#search">Search &amp; browse</a></td><td>Buyer / visitor</td><td>Home search or category</td><td>Listing results</td><td>—</td><td>journeys/02</td></tr>
         <tr><td class="n">J07</td><td><a href="#detail">View an ad</a></td><td>Buyer / visitor</td><td>Listing card / shared link</td><td>Save, chat or report</td><td>Reports</td><td>journeys/03</td></tr>
@@ -331,7 +331,7 @@
     <dl class="meta">
       <div><dt>Primary actor</dt><dd>Moderator, Admin, Super Admin</dd></div>
       <div><dt>Trigger</dt><dd>An ad is <code>pending</code></dd></div>
-      <div><dt>Outcome</dt><dd>Ad <code>active</code>, <code>rejected</code>, paused or suspended</dd></div>
+      <div><dt>Outcome</dt><dd>Ad <code>active</code>, <code>rejected</code>, frozen or suspended</dd></div>
       <div><dt>BO touchpoint</dt><dd>Ads, Escalations, Audit log</dd></div>
       <div><dt>Source</dt><dd>code (BO)</dd></div>
     </dl>
@@ -346,7 +346,7 @@
         <tr><td class="n">1</td><td>BO → Ads (<code>?status=pending</code>)</td><td>Moderator, Admin, Super Admin</td><td>Opens the queue, reviews one ad or ticks several</td><td>—</td></tr>
         <tr><td class="n">2a</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Approve</b> → <code>active</code>, ad goes live; seller emailed "Your listing is live" (production only). Refused if the seller's account is suspended or closed</td><td>BO audit log; seller's activity (<code>AD_APPROVED</code>)</td></tr>
         <tr><td class="n">2b</td><td>Ad page / bulk bar</td><td>Same</td><td><b>Reject</b> with a reason → <code>rejected</code>; seller emailed once per rejection</td><td>BO audit log; <code>AD_REJECTED</code></td></tr>
-        <tr><td class="n">2c</td><td>Ad page</td><td>Same</td><td><b>Pause</b> a live ad → <code>off</code>; no email</td><td>BO audit log</td></tr>
+        <tr><td class="n">2c</td><td>Ad page</td><td>Same</td><td><b>Freeze</b> a live ad → <code>off</code>, marked <code>frozenByStaff</code>. The seller sees "Frozen" on <code>/my-ads</code> and can't resume it; no email</td><td>BO audit log</td></tr>
         <tr><td class="n">2d</td><td>Ad page</td><td>Admin, Super Admin</td><td><b>Suspend</b> (scam, illegal, dangerous) → hidden, status saved for later; seller emailed "listing removed" with a link to appeal (<a href="#suspend">J14</a>)</td><td>BO audit log; <code>AD_SUSPENDED</code></td></tr>
         <tr><td class="n">2e</td><td>Ad page</td><td>Moderator</td><td><b>Escalate to Admin…</b> instead of only rejecting (<a href="#escalate">J15</a>)</td><td>BO audit log; Escalations</td></tr>
         <tr><td class="n">3</td><td>Seller's <code>/my-ads</code></td><td>Seller</td><td>Sees the status and reason; can edit and resubmit (back to <code>pending</code>, "under review" email)</td><td><code>POST_UPDATED</code></td></tr>
@@ -359,9 +359,10 @@
         <tr><td class="n">BR-J04.1</td><td>An ad can't be approved while the seller's account is suspended or closed.</td></tr>
         <tr><td class="n">BR-J04.2</td><td>Rejecting requires a reason; the seller is emailed once per rejection.</td></tr>
         <tr><td class="n">BR-J04.3</td><td>Only Admins and Super Admins can suspend.</td></tr>
-        <tr><td class="n">BR-J04.4</td><td>A suspended ad can't be approved, paused or rejected, singly or in bulk.</td></tr>
+        <tr><td class="n">BR-J04.4</td><td>A suspended ad can't be approved, frozen or rejected, singly or in bulk.</td></tr>
         <tr><td class="n">BR-J04.5</td><td>Moderators escalate scams, weapons, drugs, adult content, stolen or counterfeit goods and anything involving minors, rather than only rejecting.</td></tr>
         <tr><td class="n">BR-J04.6</td><td>Seller emails are sent in production only.</td></tr>
+        <tr><td class="n">BR-J04.7</td><td>A frozen ad stays frozen until the seller edits it (back to Pending) or staff approve or reject it. Approving or rejecting clears the freeze.</td></tr>
       </tbody>
     </table></div>
     <h2>Outcome</h2>
@@ -388,7 +389,7 @@
       <thead><tr><th>Action</th><th>From</th><th>To</th><th>Rules</th></tr></thead>
       <tbody>
         <tr><td>Pause</td><td><code>active</code></td><td><code>off</code></td><td>—</td></tr>
-        <tr><td>Resume</td><td><code>off</code> (paused by seller)</td><td><code>active</code></td><td>Counts against the 5-ad limit; not allowed if staff suspended it</td></tr>
+        <tr><td>Resume</td><td><code>off</code> (paused by seller)</td><td><code>active</code></td><td>Counts against the 5-ad limit; not allowed if staff froze or suspended it</td></tr>
         <tr><td>Renew</td><td><code>expired</code></td><td><code>active</code></td><td>New 60-day period; 5-ad limit</td></tr>
         <tr><td>Close</td><td><code>active</code> / <code>off</code></td><td><code>closed</code></td><td>—</td></tr>
         <tr><td>Delete</td><td>Any</td><td><code>deleted</code></td><td>Soft delete; images removed; logs <code>POST_DELETED</code></td></tr>
@@ -402,7 +403,7 @@
       <tbody>
         <tr><td class="n">BR-J05.1</td><td>At most <b>5</b> active ads per user.</td></tr>
         <tr><td class="n">BR-J05.2</td><td>Every edit sends the ad back to <code>pending</code> (<a href="#moderate">J04</a>).</td></tr>
-        <tr><td class="n">BR-J05.3</td><td>A seller can't resume an ad staff suspended.</td></tr>
+        <tr><td class="n">BR-J05.3</td><td>A seller can't resume an ad staff froze or suspended. A frozen ad can be edited, which sends it back to review.</td></tr>
         <tr><td class="n">BR-J05.4</td><td>Renewing gives a new 60-day period.</td></tr>
         <tr><td class="n">BR-J05.5</td><td>Bumping has a per-country cooldown.</td></tr>
         <tr><td class="n">BR-J05.6</td><td>"Under review" on <code>/my-ads</code> isn't a status: it's shown when the ad has an open user report (<a href="#report">J09</a>).</td></tr>
@@ -465,7 +466,7 @@
     <h2>Business objective</h2>
     <p>Give buyers everything they need to decide, and a direct way to contact the seller or flag a problem.</p>
     <h2>Preconditions</h2>
-    <ul><li>The ad is live; pending, rejected, paused, expired and deleted ads aren't shown.</li></ul>
+    <ul><li>The ad is live; pending, rejected, paused, frozen, expired and deleted ads aren't shown.</li></ul>
     <h2>Process flow: actions</h2>
     <div class="wrap"><table>
       <thead><tr><th>Action</th><th>Who</th><th>What happens</th></tr></thead>
@@ -554,7 +555,7 @@
         <tr><td class="n">3</td><td>BO → Reports (Open tab)</td><td>Moderator, Admin, Super Admin</td><td>Works the list high priority first, then oldest first. Each row shows the ad's state and the seller's count of valid reports (red at 3+)</td></tr>
         <tr><td class="n">4a</td><td>BO → Reports → Review…</td><td>Same</td><td><b>Mark reviewed</b>: checked, still open</td></tr>
         <tr><td class="n">4b</td><td>Same</td><td>Same</td><td><b>Dismiss</b>: the report was unfounded; ad unchanged</td></tr>
-        <tr><td class="n">4c</td><td>Same</td><td>Same (suspend: Admin+)</td><td><b>Actioned</b>: pick what happens to the ad (reject with a reason for the seller, pause, or suspend). "Already handled" only if the ad isn't live. The ad's other open reports close too</td></tr>
+        <tr><td class="n">4c</td><td>Same</td><td>Same (suspend: Admin+)</td><td><b>Actioned</b>: pick what happens to the ad (reject with a reason for the seller, freeze, or suspend). "Already handled" only if the ad isn't live. The ad's other open reports close too</td></tr>
         <tr><td class="n">5</td><td>Email</td><td>Reporter</td><td>When the report closes (actioned or dismissed), the reporter gets "Resolved" or "Dismissed" (production only)</td></tr>
         <tr><td class="n">6</td><td>BO</td><td>Moderator / Support</td><td>Seller with 3+ valid reports → escalate their account for a suspension review (<a href="#escalate">J15</a>)</td></tr>
         <tr><td class="n">7</td><td>Audit log</td><td>—</td><td>Each decision with a required note, the staff member and the time</td></tr>
@@ -757,7 +758,7 @@
       <thead><tr><th>Step</th><th>Where</th><th>Who</th><th>What happens</th></tr></thead>
       <tbody>
         <tr><td class="n">1</td><td>BO → user page → Suspend</td><td>Admin, Super Admin</td><td>Reason required. User can't sign in; all their live ads go offline (marked <code>pausedForOwnerSuspension</code>); their pending ads can't be approved. Emailed "account suspended" with a link to appeal</td></tr>
-        <tr><td class="n">2</td><td>BO → user page → Unsuspend</td><td>Admin, Super Admin</td><td>Reason required. Exactly the ads taken offline by the suspension go live again; ads the seller paused, or an admin suspended one by one, stay as they are. Emailed "account reinstated"</td></tr>
+        <tr><td class="n">2</td><td>BO → user page → Unsuspend</td><td>Admin, Super Admin</td><td>Reason required. Exactly the ads taken offline by the suspension go live again; ads the seller paused, or staff froze or suspended one by one, stay as they are. Emailed "account reinstated"</td></tr>
       </tbody>
     </table></div>
     <h2>Process flow: appeal</h2>
@@ -827,18 +828,21 @@
     <span class="doc-id">BRD · Reference R1</span>
     <h1>Ad statuses</h1>
     <div class="wrap"><table>
-      <thead><tr><th>Status</th><th>Seen by buyers?</th><th>How it gets there</th></tr></thead>
+      <thead><tr><th>Status</th><th>Stored as</th><th>Definition</th><th>Seen by buyers?</th><th>How it gets there</th><th>Way out</th></tr></thead>
       <tbody>
-        <tr><td><code>pending</code></td><td>No</td><td>New ad, or any edit by the seller</td></tr>
-        <tr><td><code>active</code></td><td>Yes</td><td>Approved by staff; or seller resumes / renews</td></tr>
-        <tr><td><code>rejected</code></td><td>No</td><td>Rejected by staff with a reason; seller is emailed (production only)</td></tr>
-        <tr><td><code>off</code></td><td>No</td><td>Seller or staff paused it, the owner's account was suspended (<code>pausedForOwnerSuspension</code>), or an admin suspended the ad</td></tr>
-        <tr><td><code>expired</code></td><td>No</td><td>Past its end date; seller can renew for 60 days</td></tr>
-        <tr><td><code>closed</code></td><td>No</td><td>Seller marked it sold / closed</td></tr>
-        <tr><td><code>deleted</code></td><td>No</td><td>Seller deleted it, or the owner's account was deleted</td></tr>
+        <tr><td>Pending</td><td><code>pending</code></td><td>Waiting for staff review before it can go live</td><td>No</td><td>New ad, or any edit by the seller</td><td>Staff approve or reject it (<a href="#moderate">J04</a>)</td></tr>
+        <tr><td>Active</td><td><code>active</code></td><td>Live: buyers can find it and contact the seller</td><td>Yes</td><td>Approved by staff; or the seller resumes or renews it</td><td>Seller pauses, closes or deletes it; staff freeze or suspend it; it expires</td></tr>
+        <tr><td>Rejected</td><td><code>rejected</code></td><td>Failed review before going live; the seller sees the reason</td><td>No</td><td>Rejected by staff with a reason; seller is emailed (production only)</td><td>Seller edits and resubmits (back to Pending)</td></tr>
+        <tr><td>Paused</td><td><code>off</code></td><td>The seller hid their own ad for a while</td><td>No</td><td>Seller paused it on <code>/my-ads</code></td><td>Seller resumes it (5-ad limit)</td></tr>
+        <tr><td>Frozen</td><td><code>off</code> + <code>frozenByStaff</code></td><td>Staff took a live ad off the site after a review, usually a valid report. Less serious than a suspension, but the seller can't resume it themselves</td><td>No</td><td>Staff chose Freeze on the ad page, user page or a report (<a href="#moderate">J04</a>, <a href="#report">J09</a>)</td><td>Seller edits it (back to Pending), or staff approve or reject it; either clears the freeze</td></tr>
+        <tr><td>Expired</td><td><code>expired</code></td><td>Its listing period ended</td><td>No</td><td>Past its end date</td><td>Seller renews it for 60 days (5-ad limit)</td></tr>
+        <tr><td>Closed</td><td><code>closed</code></td><td>The seller ended it, e.g. sold</td><td>No</td><td>Seller marked it sold / closed</td><td>None; the seller posts a new ad</td></tr>
+        <tr><td>Deleted</td><td><code>deleted</code></td><td>Removed for good; kept only in the records</td><td>No</td><td>Seller deleted it, or the owner's account was deleted</td><td>None</td></tr>
+        <tr><td>Suspended</td><td><code>isSuspended</code> flag (status set to <code>off</code>, old status saved)</td><td>An admin removed it for a serious breach: scam, illegal or dangerous. Overrides every other status</td><td>No</td><td>Admin chose Suspend (<a href="#suspend">J14</a>)</td><td>Only an admin's Unsuspend, which restores the status it had before; the seller appeals through support</td></tr>
+        <tr><td>Reported</td><td>An open report, not a status</td><td>A user reported the ad and staff haven't decided yet. Shown on <code>/my-ads</code> instead of Active or Paused</td><td>Yes, if it was live</td><td>A user reported it (<a href="#report">J09</a>)</td><td>Staff dismiss or action the report</td></tr>
       </tbody>
     </table></div>
-    <p class="note"><b>Suspended</b> isn't a status: it's a separate flag (<code>isSuspended</code>). A suspended ad is hidden whatever its status, and only an admin's Unsuspend brings it back (<a href="#suspend">J14</a>).</p>
+    <p class="note">The seller sees these names on <code>/my-ads</code>. Paused and Frozen are both stored as <code>off</code>: <code>frozenByStaff</code> is what tells them apart. An ad taken offline because its owner's account was suspended is also <code>off</code> (<code>pausedForOwnerSuspension</code>) and comes back when the account is unsuspended.</p>
   </article>
 
   <nav class="pager" aria-label="Previous and next section">

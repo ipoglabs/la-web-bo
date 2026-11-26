@@ -108,7 +108,7 @@ export default function AdminPostActions({
             disabled={pending}
             onClick={() => act(() => updatePostStatus(postId, "off"))}
           >
-            Pause
+            Freeze
           </Button>
         )}
 

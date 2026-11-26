@@ -200,6 +200,9 @@ export interface IPost {
   /** Set when the ad was taken offline because its owner's account was
    *  suspended; unsuspending the account puts these ads back live. */
   pausedForOwnerSuspension?: boolean;
+  /** Staff froze the ad (status "off"): la-web shows the seller "Frozen" and
+   *  won't let them resume it. Approving or rejecting it clears this. */
+  frozenByStaff?: boolean;
   /** Set by la-web once the seller has been emailed "listing removed" for the current suspension. */
   suspensionEmailSentAt?: Date;
 
@@ -403,6 +406,7 @@ const PostSchema = new Schema<IPost>(
 
     statusBeforeSuspend: String,
     pausedForOwnerSuspension: Boolean,
+    frozenByStaff: Boolean,
     suspensionEmailSentAt: Date,
   },
   { timestamps: true }
