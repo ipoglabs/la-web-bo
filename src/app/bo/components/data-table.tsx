@@ -48,6 +48,9 @@ export function DataTable<TData, TValue>({
     pageSize: 10,
   })
 
+  // TanStack Table returns functions React Compiler can't memoize, so the
+  // compiler skips this component. Expected and harmless here.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

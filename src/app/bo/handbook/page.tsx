@@ -105,7 +105,7 @@ const DUTIES: Record<AdminRole, Duty[]> = {
       title: "User reports",
       items: [
         "Review open Reports daily; the list puts high priority first, then oldest. Every decision needs an internal note.",
-        "Actioned means the ad broke the rules, so choose what happens to it: reject (with a reason for the seller), pause, or (admins) suspend. \"Already handled\" only works if the ad isn't live any more. Actioning closes the ad's other open reports too.",
+        "Actioned means the ad broke the rules, so choose what happens to it: reject (with a reason for the seller), freeze, or (admins) suspend. \"Already handled\" only works if the ad isn't live any more. Actioning closes the ad's other open reports too.",
         "Dismiss when the report was unfounded. Either way the person who reported it is emailed that it was closed (never your note).",
         "If a seller shows 3+ valid reports (red badge on Reports, red box on their user page), escalate their account to an Admin for suspension review.",
       ],
