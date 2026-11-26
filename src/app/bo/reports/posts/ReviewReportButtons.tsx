@@ -46,7 +46,7 @@ export default function ReviewReportButtons({
 
   const actions: { value: AdAction; label: string; show: boolean }[] = [
     { value: "reject", label: "Reject the ad (seller gets your reason)", show: adExists && canModerate },
-    { value: "pause", label: "Pause the ad", show: adExists && canModerate },
+    { value: "pause", label: "Freeze the ad", show: adExists && canModerate },
     { value: "suspend", label: "Suspend the ad (serious: scam, illegal, dangerous)", show: adExists && canSuspend },
     { value: "handled", label: adLive ? "Already handled (not possible: the ad is live)" : "Already handled (the ad isn't live)", show: true },
   ]

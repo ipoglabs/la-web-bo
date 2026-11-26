@@ -67,7 +67,7 @@ export async function reviewAdReport(
       const live = !!post && post.status === "active" && !post.isSuspended;
 
       if (adAction === "handled") {
-        if (live) return { ok: false, error: "The ad is still live. Reject, pause or suspend it, or dismiss the report." };
+        if (live) return { ok: false, error: "The ad is still live. Reject, freeze or suspend it, or dismiss the report." };
       } else {
         if (!postId) return { ok: false, error: "The ad no longer exists. Choose \"Already handled\"." };
         if (adAction === "suspend") {
