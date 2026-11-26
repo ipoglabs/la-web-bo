@@ -70,6 +70,8 @@ export default async function BoPostDetailsPage({
     : []
 
   const status = post.status ?? "pending"
+  // "off" covers the seller's own pause and a staff freeze; say which.
+  const statusLabel = status === "off" && post.frozenByStaff && !post.isSuspended ? "frozen" : status
   const rows = detailRows(post as unknown as Record<string, unknown>)
   const images = (post.images ?? []).filter(Boolean)
   const loc = post.location
@@ -103,7 +105,7 @@ export default async function BoPostDetailsPage({
                 </p>
               </div>
               <span className={`rounded-full px-3 py-1 text-sm font-medium capitalize ${STATUS_STYLES[status] ?? "bg-slate-100"}`}>
-                {status}
+                {statusLabel}
               </span>
             </div>
 

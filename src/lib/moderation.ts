@@ -99,13 +99,17 @@ export async function moderateAd(
   }
 
   // A rejection carries a reason for the seller; any other status clears it.
+  // "off" from staff is a freeze: la-web shows the seller "Frozen" and won't
+  // let them resume it. Any other decision lifts the freeze.
   // Every change clears the "seller emailed" markers, so a later approval or
   // re-rejection is emailed again (la-web sends at most once per decision).
   const sentMarkers = { rejectionEmailSentAt: 1, liveEmailSentAt: 1 } as const;
   const update =
     status === "rejected"
-      ? { $set: { status, rejectionReason, updatedAt: new Date() }, $unset: sentMarkers }
-      : { $set: { status, updatedAt: new Date() }, $unset: { rejectionReason: 1, ...sentMarkers } };
+      ? { $set: { status, rejectionReason, updatedAt: new Date() }, $unset: { frozenByStaff: 1, ...sentMarkers } }
+      : status === "off"
+        ? { $set: { status, frozenByStaff: true, updatedAt: new Date() }, $unset: { rejectionReason: 1, ...sentMarkers } }
+        : { $set: { status, updatedAt: new Date() }, $unset: { rejectionReason: 1, frozenByStaff: 1, ...sentMarkers } };
 
   await Post.updateOne({ _id: postId }, update);
 

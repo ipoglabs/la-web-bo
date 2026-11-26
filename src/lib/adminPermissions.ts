@@ -73,7 +73,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
 export const ROLE_SUMMARY: Record<AdminRole, string> = {
   super_admin: "Owns the platform. Manages admins, deletes users, accesses private data (Dev Tools).",
   admin: "Runs day-to-day operations. Manages moderators/support/analysts, suspends users and ads, edits form options.",
-  moderator: "Reviews the ad queue and user reports. Approves, rejects and pauses ads.",
+  moderator: "Reviews the ad queue and user reports. Approves, rejects and freezes ads.",
   support: "Read-only access to users, ads and reports to answer customer questions.",
   analyst: "Read-only access to ads for reporting.",
 };
